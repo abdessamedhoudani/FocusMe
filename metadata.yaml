@@ -1,0 +1,58 @@
+name: FocusMe
+description: Une application Flutter moderne pour la gestion quotidienne des tâches avec notifications et statistiques de productivité.
+version: 1.0.0
+author: FocusMe Team
+homepage: https://github.com/focusme/focusme
+repository: https://github.com/focusme/focusme
+issue_tracker: https://github.com/focusme/focusme/issues
+documentation: https://github.com/focusme/focusme/wiki
+
+platforms:
+  - android
+  - ios
+
+features:
+  - task_management
+  - notifications
+  - statistics
+  - daily_reset
+  - material_design
+
+technologies:
+  - flutter
+  - dart
+  - hive
+  - provider
+  - material_3
+  - fl_chart
+  - flutter_local_notifications
+
+license: MIT
+keywords:
+  - flutter
+  - task-management
+  - productivity
+  - notifications
+  - statistics
+  - material-design
+  - mobile-app
+
+screenshots:
+  - path: screenshots/home.png
+    description: Page principale avec liste des tâches
+  - path: screenshots/add_task.png
+    description: Page d'ajout de tâche
+  - path: screenshots/stats.png
+    description: Page de statistiques avec graphiques
+
+changelog:
+  - version: 1.0.0
+    date: 2024-01-01
+    changes:
+      - Version initiale
+      - Gestion complète des tâches (CRUD)
+      - Notifications locales
+      - Statistiques et graphiques
+      - Réinitialisation quotidienne
+      - Design Material 3
+      - Support Android et iOS
