@@ -1,0 +1,199 @@
+{
+  "@@locale": "en",
+  "appTitle": "FocusMe",
+  "@appTitle": {
+    "description": "The application title"
+  },
+  "today": "Today",
+  "@today": {
+    "description": "Today"
+  },
+  "overdue": "Overdue",
+  "@overdue": {
+    "description": "Overdue"
+  },
+  "all": "All",
+  "@all": {
+    "description": "All tasks"
+  },
+  "addTask": "Add Task",
+  "@addTask": {
+    "description": "Add task"
+  },
+  "taskTitle": "Task Title",
+  "@taskTitle": {
+    "description": "Task title"
+  },
+  "taskDescription": "Description (optional)",
+  "@taskDescription": {
+    "description": "Task description"
+  },
+  "selectDate": "Select Date",
+  "@selectDate": {
+    "description": "Select date"
+  },
+  "selectTime": "Select Time",
+  "@selectTime": {
+    "description": "Select time"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edit"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete"
+  },
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed"
+  },
+  "pending": "Pending",
+  "@pending": {
+    "description": "Pending"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings"
+  },
+  "statistics": "Statistics",
+  "@statistics": {
+    "description": "Statistics"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications"
+  },
+  "taskReminders": "Task Reminders",
+  "@taskReminders": {
+    "description": "Task reminders"
+  },
+  "receiveNotifications": "Receive notifications for scheduled tasks",
+  "@receiveNotifications": {
+    "description": "Receive notifications for scheduled tasks"
+  },
+  "notificationSound": "Notification Sound",
+  "@notificationSound": {
+    "description": "Notification sound"
+  },
+  "enableNotificationSound": "Enable sound for notifications",
+  "@enableNotificationSound": {
+    "description": "Enable sound for notifications"
+  },
+  "dataManagement": "Data Management",
+  "@dataManagement": {
+    "description": "Data management"
+  },
+  "resetDailyTasks": "Reset Daily Tasks",
+  "@resetDailyTasks": {
+    "description": "Reset daily tasks"
+  },
+  "markAllAsIncomplete": "Mark all tasks as incomplete",
+  "@markAllAsIncomplete": {
+    "description": "Mark all tasks as incomplete"
+  },
+  "deleteCompletedTasks": "Delete Completed Tasks",
+  "@deleteCompletedTasks": {
+    "description": "Delete completed tasks"
+  },
+  "cleanupHistory": "Clean up completed tasks history",
+  "@cleanupHistory": {
+    "description": "Clean up completed tasks history"
+  },
+  "deleteAllTasks": "Delete All Tasks",
+  "@deleteAllTasks": {
+    "description": "Delete all tasks"
+  },
+  "clearAllData": "Clear all application data",
+  "@clearAllData": {
+    "description": "Clear all application data"
+  },
+  "about": "About",
+  "@about": {
+    "description": "About"
+  },
+  "version": "Version",
+  "@version": {
+    "description": "Version"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language"
+  },
+  "selectLanguage": "Select Language",
+  "@selectLanguage": {
+    "description": "Select language"
+  },
+  "french": "Français",
+  "@french": {
+    "description": "French"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English"
+  },
+  "arabic": "العربية",
+  "@arabic": {
+    "description": "Arabic"
+  },
+  "noTasksToday": "No tasks scheduled for today",
+  "@noTasksToday": {
+    "description": "No tasks scheduled for today"
+  },
+  "noOverdueTasks": "No overdue tasks",
+  "@noOverdueTasks": {
+    "description": "No overdue tasks"
+  },
+  "noTasks": "No tasks",
+  "@noTasks": {
+    "description": "No tasks"
+  },
+  "periodSummary": "Period Summary",
+  "@periodSummary": {
+    "description": "Period summary"
+  },
+  "tasksCreated": "Tasks Created",
+  "@tasksCreated": {
+    "description": "Tasks created"
+  },
+  "tasksCompleted": "Tasks Completed",
+  "@tasksCompleted": {
+    "description": "Tasks completed"
+  },
+  "successRate": "Success Rate",
+  "@successRate": {
+    "description": "Success rate"
+  },
+  "overdueTasks": "Overdue Tasks",
+  "@overdueTasks": {
+    "description": "Overdue tasks"
+  },
+  "taskDistribution": "Task Distribution",
+  "@taskDistribution": {
+    "description": "Task distribution"
+  },
+  "dailyProgress": "Daily Progress",
+  "@dailyProgress": {
+    "description": "Daily progress"
+  },
+  "completedTasks": "Completed",
+  "@completedTasks": {
+    "description": "Completed"
+  },
+  "pendingTasks": "Pending",
+  "@pendingTasks": {
+    "description": "Pending"
+  },
+  "overdueTasksLabel": "Overdue",
+  "@overdueTasksLabel": {
+    "description": "Overdue"
+  }
+}

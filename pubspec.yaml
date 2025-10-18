@@ -1,5 +1,5 @@
 name: focusme
-description: "A new Flutter project."
+description: "FocusMe - Application de gestion des tâches quotidiennes avec notifications et statistiques"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -34,6 +34,44 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  
+  # State management
+  provider: ^6.1.2
+  
+  # Local storage
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+  
+  # Notifications
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
+  
+  # Audio playback
+  audioplayers: ^6.1.0
+  
+  # Charts and statistics
+  fl_chart: ^0.69.0
+  
+  # Date and time handling
+  intl: ^0.20.2
+  
+  # Animations
+  flutter_animate: ^4.5.0
+  
+  # UUID generation
+  uuid: ^4.5.1
+  
+  # SVG support
+  flutter_svg: ^2.0.10+1
+  shared_preferences: ^2.2.2
+  
+  # File picker for custom sounds
+  file_picker: ^8.0.0+1
+  path_provider: ^2.1.1
+  
+  # Internationalization
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -56,11 +94,13 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  
+  # Enable internationalization
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

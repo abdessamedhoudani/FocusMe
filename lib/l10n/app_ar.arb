@@ -1,0 +1,199 @@
+{
+  "@@locale": "ar",
+  "appTitle": "فوكس مي",
+  "@appTitle": {
+    "description": "عنوان التطبيق"
+  },
+  "today": "اليوم",
+  "@today": {
+    "description": "اليوم"
+  },
+  "overdue": "متأخرة",
+  "@overdue": {
+    "description": "متأخرة"
+  },
+  "all": "الكل",
+  "@all": {
+    "description": "جميع المهام"
+  },
+  "addTask": "إضافة مهمة",
+  "@addTask": {
+    "description": "إضافة مهمة"
+  },
+  "taskTitle": "عنوان المهمة",
+  "@taskTitle": {
+    "description": "عنوان المهمة"
+  },
+  "taskDescription": "الوصف (اختياري)",
+  "@taskDescription": {
+    "description": "وصف المهمة"
+  },
+  "selectDate": "اختر التاريخ",
+  "@selectDate": {
+    "description": "اختر التاريخ"
+  },
+  "selectTime": "اختر الوقت",
+  "@selectTime": {
+    "description": "اختر الوقت"
+  },
+  "save": "حفظ",
+  "@save": {
+    "description": "حفظ"
+  },
+  "cancel": "إلغاء",
+  "@cancel": {
+    "description": "إلغاء"
+  },
+  "edit": "تعديل",
+  "@edit": {
+    "description": "تعديل"
+  },
+  "delete": "حذف",
+  "@delete": {
+    "description": "حذف"
+  },
+  "completed": "مكتملة",
+  "@completed": {
+    "description": "مكتملة"
+  },
+  "pending": "في الانتظار",
+  "@pending": {
+    "description": "في الانتظار"
+  },
+  "settings": "الإعدادات",
+  "@settings": {
+    "description": "الإعدادات"
+  },
+  "statistics": "الإحصائيات",
+  "@statistics": {
+    "description": "الإحصائيات"
+  },
+  "notifications": "الإشعارات",
+  "@notifications": {
+    "description": "الإشعارات"
+  },
+  "taskReminders": "تذكيرات المهام",
+  "@taskReminders": {
+    "description": "تذكيرات المهام"
+  },
+  "receiveNotifications": "تلقي إشعارات للمهام المجدولة",
+  "@receiveNotifications": {
+    "description": "تلقي إشعارات للمهام المجدولة"
+  },
+  "notificationSound": "صوت الإشعارات",
+  "@notificationSound": {
+    "description": "صوت الإشعارات"
+  },
+  "enableNotificationSound": "تفعيل الصوت للإشعارات",
+  "@enableNotificationSound": {
+    "description": "تفعيل الصوت للإشعارات"
+  },
+  "dataManagement": "إدارة البيانات",
+  "@dataManagement": {
+    "description": "إدارة البيانات"
+  },
+  "resetDailyTasks": "إعادة تعيين المهام اليومية",
+  "@resetDailyTasks": {
+    "description": "إعادة تعيين المهام اليومية"
+  },
+  "markAllAsIncomplete": "وضع علامة على جميع المهام كغير مكتملة",
+  "@markAllAsIncomplete": {
+    "description": "وضع علامة على جميع المهام كغير مكتملة"
+  },
+  "deleteCompletedTasks": "حذف المهام المكتملة",
+  "@deleteCompletedTasks": {
+    "description": "حذف المهام المكتملة"
+  },
+  "cleanupHistory": "تنظيف تاريخ المهام المكتملة",
+  "@cleanupHistory": {
+    "description": "تنظيف تاريخ المهام المكتملة"
+  },
+  "deleteAllTasks": "حذف جميع المهام",
+  "@deleteAllTasks": {
+    "description": "حذف جميع المهام"
+  },
+  "clearAllData": "مسح جميع بيانات التطبيق",
+  "@clearAllData": {
+    "description": "مسح جميع بيانات التطبيق"
+  },
+  "about": "حول",
+  "@about": {
+    "description": "حول"
+  },
+  "version": "الإصدار",
+  "@version": {
+    "description": "الإصدار"
+  },
+  "language": "اللغة",
+  "@language": {
+    "description": "اللغة"
+  },
+  "selectLanguage": "اختر اللغة",
+  "@selectLanguage": {
+    "description": "اختر اللغة"
+  },
+  "french": "Français",
+  "@french": {
+    "description": "الفرنسية"
+  },
+  "english": "English",
+  "@english": {
+    "description": "الإنجليزية"
+  },
+  "arabic": "العربية",
+  "@arabic": {
+    "description": "العربية"
+  },
+  "noTasksToday": "لا توجد مهام مجدولة لليوم",
+  "@noTasksToday": {
+    "description": "لا توجد مهام مجدولة لليوم"
+  },
+  "noOverdueTasks": "لا توجد مهام متأخرة",
+  "@noOverdueTasks": {
+    "description": "لا توجد مهام متأخرة"
+  },
+  "noTasks": "لا توجد مهام",
+  "@noTasks": {
+    "description": "لا توجد مهام"
+  },
+  "periodSummary": "ملخص الفترة",
+  "@periodSummary": {
+    "description": "ملخص الفترة"
+  },
+  "tasksCreated": "المهام المنشأة",
+  "@tasksCreated": {
+    "description": "المهام المنشأة"
+  },
+  "tasksCompleted": "المهام المكتملة",
+  "@tasksCompleted": {
+    "description": "المهام المكتملة"
+  },
+  "successRate": "معدل النجاح",
+  "@successRate": {
+    "description": "معدل النجاح"
+  },
+  "overdueTasks": "المهام المتأخرة",
+  "@overdueTasks": {
+    "description": "المهام المتأخرة"
+  },
+  "taskDistribution": "توزيع المهام",
+  "@taskDistribution": {
+    "description": "توزيع المهام"
+  },
+  "dailyProgress": "التقدم اليومي",
+  "@dailyProgress": {
+    "description": "التقدم اليومي"
+  },
+  "completedTasks": "مكتملة",
+  "@completedTasks": {
+    "description": "مكتملة"
+  },
+  "pendingTasks": "في الانتظار",
+  "@pendingTasks": {
+    "description": "في الانتظار"
+  },
+  "overdueTasksLabel": "متأخرة",
+  "@overdueTasksLabel": {
+    "description": "متأخرة"
+  }
+}

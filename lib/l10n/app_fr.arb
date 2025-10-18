@@ -1,0 +1,199 @@
+{
+  "@@locale": "fr",
+  "appTitle": "FocusMe",
+  "@appTitle": {
+    "description": "Le titre de l'application"
+  },
+  "today": "Aujourd'hui",
+  "@today": {
+    "description": "Aujourd'hui"
+  },
+  "overdue": "En retard",
+  "@overdue": {
+    "description": "En retard"
+  },
+  "all": "Toutes",
+  "@all": {
+    "description": "Toutes les tâches"
+  },
+  "addTask": "Ajouter une tâche",
+  "@addTask": {
+    "description": "Ajouter une tâche"
+  },
+  "taskTitle": "Titre de la tâche",
+  "@taskTitle": {
+    "description": "Titre de la tâche"
+  },
+  "taskDescription": "Description (optionnelle)",
+  "@taskDescription": {
+    "description": "Description de la tâche"
+  },
+  "selectDate": "Sélectionner une date",
+  "@selectDate": {
+    "description": "Sélectionner une date"
+  },
+  "selectTime": "Sélectionner une heure",
+  "@selectTime": {
+    "description": "Sélectionner une heure"
+  },
+  "save": "Enregistrer",
+  "@save": {
+    "description": "Enregistrer"
+  },
+  "cancel": "Annuler",
+  "@cancel": {
+    "description": "Annuler"
+  },
+  "edit": "Modifier",
+  "@edit": {
+    "description": "Modifier"
+  },
+  "delete": "Supprimer",
+  "@delete": {
+    "description": "Supprimer"
+  },
+  "completed": "Terminée",
+  "@completed": {
+    "description": "Terminée"
+  },
+  "pending": "En attente",
+  "@pending": {
+    "description": "En attente"
+  },
+  "settings": "Paramètres",
+  "@settings": {
+    "description": "Paramètres"
+  },
+  "statistics": "Statistiques",
+  "@statistics": {
+    "description": "Statistiques"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications"
+  },
+  "taskReminders": "Rappels de tâches",
+  "@taskReminders": {
+    "description": "Rappels de tâches"
+  },
+  "receiveNotifications": "Recevoir des notifications pour les tâches programmées",
+  "@receiveNotifications": {
+    "description": "Recevoir des notifications pour les tâches programmées"
+  },
+  "notificationSound": "Son des notifications",
+  "@notificationSound": {
+    "description": "Son des notifications"
+  },
+  "enableNotificationSound": "Activer le son pour les notifications",
+  "@enableNotificationSound": {
+    "description": "Activer le son pour les notifications"
+  },
+  "dataManagement": "Gestion des données",
+  "@dataManagement": {
+    "description": "Gestion des données"
+  },
+  "resetDailyTasks": "Réinitialiser les tâches quotidiennes",
+  "@resetDailyTasks": {
+    "description": "Réinitialiser les tâches quotidiennes"
+  },
+  "markAllAsIncomplete": "Marquer toutes les tâches comme non terminées",
+  "@markAllAsIncomplete": {
+    "description": "Marquer toutes les tâches comme non terminées"
+  },
+  "deleteCompletedTasks": "Supprimer les tâches terminées",
+  "@deleteCompletedTasks": {
+    "description": "Supprimer les tâches terminées"
+  },
+  "cleanupHistory": "Nettoyer l'historique des tâches complétées",
+  "@cleanupHistory": {
+    "description": "Nettoyer l'historique des tâches complétées"
+  },
+  "deleteAllTasks": "Supprimer toutes les tâches",
+  "@deleteAllTasks": {
+    "description": "Supprimer toutes les tâches"
+  },
+  "clearAllData": "Effacer toutes les données de l'application",
+  "@clearAllData": {
+    "description": "Effacer toutes les données de l'application"
+  },
+  "about": "À propos",
+  "@about": {
+    "description": "À propos"
+  },
+  "version": "Version",
+  "@version": {
+    "description": "Version"
+  },
+  "language": "Langue",
+  "@language": {
+    "description": "Langue"
+  },
+  "selectLanguage": "Sélectionner la langue",
+  "@selectLanguage": {
+    "description": "Sélectionner la langue"
+  },
+  "french": "Français",
+  "@french": {
+    "description": "Français"
+  },
+  "english": "English",
+  "@english": {
+    "description": "English"
+  },
+  "arabic": "العربية",
+  "@arabic": {
+    "description": "العربية"
+  },
+  "noTasksToday": "Aucune tâche prévue aujourd'hui",
+  "@noTasksToday": {
+    "description": "Aucune tâche prévue aujourd'hui"
+  },
+  "noOverdueTasks": "Aucune tâche en retard",
+  "@noOverdueTasks": {
+    "description": "Aucune tâche en retard"
+  },
+  "noTasks": "Aucune tâche",
+  "@noTasks": {
+    "description": "Aucune tâche"
+  },
+  "periodSummary": "Résumé de la période",
+  "@periodSummary": {
+    "description": "Résumé de la période"
+  },
+  "tasksCreated": "Tâches créées",
+  "@tasksCreated": {
+    "description": "Tâches créées"
+  },
+  "tasksCompleted": "Tâches terminées",
+  "@tasksCompleted": {
+    "description": "Tâches terminées"
+  },
+  "successRate": "Taux de réussite",
+  "@successRate": {
+    "description": "Taux de réussite"
+  },
+  "overdueTasks": "Tâches en retard",
+  "@overdueTasks": {
+    "description": "Tâches en retard"
+  },
+  "taskDistribution": "Répartition des tâches",
+  "@taskDistribution": {
+    "description": "Répartition des tâches"
+  },
+  "dailyProgress": "Progression quotidienne",
+  "@dailyProgress": {
+    "description": "Progression quotidienne"
+  },
+  "completedTasks": "Terminées",
+  "@completedTasks": {
+    "description": "Terminées"
+  },
+  "pendingTasks": "En attente",
+  "@pendingTasks": {
+    "description": "En attente"
+  },
+  "overdueTasksLabel": "En retard",
+  "@overdueTasksLabel": {
+    "description": "En retard"
+  }
+}
