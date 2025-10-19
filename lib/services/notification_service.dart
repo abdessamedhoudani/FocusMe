@@ -1,38 +1,23 @@
 import 'dart:async';
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../models/task.dart';
-import 'sound_service.dart';
-import 'audio_service.dart';
-import 'db_service.dart';
-import 'background_notification_service.dart';
 
-// Callback global pour les notifications en arrière-plan
+// Callback global pour les notifications en arrière-plan - Simplifié
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) async {
   print('=== CALLBACK ARRIÈRE-PLAN DÉCLENCHÉ ===');
   final payload = notificationResponse.payload;
   print('Payload reçu: $payload');
   
-  if (payload != null && payload.startsWith('custom_sound_')) {
-    final taskId = payload.substring('custom_sound_'.length);
-    print('Traitement du son personnalisé pour la tâche: $taskId');
-    try {
-      // Initialiser les services nécessaires
-      final notificationService = NotificationService();
-      await notificationService.playTaskSoundFromNotification(taskId);
-      print('Son personnalisé joué avec succès en arrière-plan');
-    } catch (e) {
-      print('Erreur lors de la lecture du son en arrière-plan: $e');
-    }
-  } else {
-    print('Payload ne correspond pas au format custom_sound: $payload');
+  if (payload != null) {
+    // Traitement simple - notification avec payload
+    print('Notification traitée avec payload: $payload');
   }
   print('=== FIN CALLBACK ARRIÈRE-PLAN ===');
 }
+
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -153,116 +138,42 @@ class NotificationService {
     print('=== FIN INITIALISATION NOTIFICATION SERVICE ===');
   }
 
-  // Créer les canaux de notification avec des configurations spécifiques
+  // Créer le canal de notification simplifié
   Future<void> _createNotificationChannels() async {
     try {
       final androidPlugin = _notifications
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       
       if (androidPlugin != null) {
-        print('=== CRÉATION DES CANAUX DE NOTIFICATION ===');
+        print('=== CRÉATION DU CANAL DE NOTIFICATION ===');
         
-        // Canal pour les notifications par défaut
+        // Un seul canal pour toutes les notifications - Android utilisera le son système par défaut
         await androidPlugin.createNotificationChannel(
           const AndroidNotificationChannel(
             'task_reminders_default',
-            'Notifications par défaut',
-            description: 'Notifications avec son par défaut',
+            'Rappels de tâches',
+            description: 'Notifications avec son système par défaut',
             importance: Importance.max,
             playSound: true,
+            // Pas de son spécifique - Android utilisera le son système par défaut
           ),
         );
-        print('Canal créé: task_reminders_default');
-
-        // Canal pour les alarmes - Android utilisera automatiquement le son d'alarme avec cette catégorie
-        await androidPlugin.createNotificationChannel(
-          const AndroidNotificationChannel(
-            'task_reminders_alarm',
-            'Rappels d\'alarme',
-            description: 'Notifications avec son d\'alarme système',
-            importance: Importance.max,
-            playSound: true,
-          ),
-        );
-        print('Canal créé: task_reminders_alarm');
-
-        // Canal pour les sonneries - Android utilisera automatiquement le son de sonnerie avec cette catégorie
-        await androidPlugin.createNotificationChannel(
-          const AndroidNotificationChannel(
-            'task_reminders_ringtone',
-            'Rappels sonnerie',
-            description: 'Notifications avec son de sonnerie système',
-            importance: Importance.max,
-            playSound: true,
-          ),
-        );
-        print('Canal créé: task_reminders_ringtone');
-
-        // Canal pour les autres sons
-        await androidPlugin.createNotificationChannel(
-          const AndroidNotificationChannel(
-            'task_reminders_custom',
-            'Rappels personnalisés',
-            description: 'Notifications avec son personnalisé',
-            importance: Importance.max,
-            playSound: true,
-          ),
-        );
-        print('Canal créé: task_reminders_custom');
-        print('=== FIN CRÉATION DES CANAUX ===');
+        print('Canal créé: task_reminders_default - Son système par défaut');
       }
     } catch (e) {
-      print('Erreur lors de la création des canaux: $e');
+      print('Erreur lors de la création du canal: $e');
     }
   }
 
-  // Gérer le tap sur une notification
+  // Gérer le tap sur une notification - Simplifié
   void _onNotificationTapped(NotificationResponse response) {
-    // Cette fonction sera appelée quand l'utilisateur tape sur une notification
     final payload = response.payload;
     if (payload != null) {
-      print('Notification triggered with payload: $payload');
-      
-      // Vérifier si c'est une notification pour jouer un son personnalisé
-      if (payload.startsWith('custom_sound_')) {
-        final taskId = payload.substring('custom_sound_'.length);
-        print('Lecture automatique du son personnalisé pour la tâche: $taskId');
-        _playTaskSound(taskId);
-      } else {
-        // Notification normale - l'utilisateur a tapé dessus
-        print('Notification tapped for task: $payload');
-        _playTaskSound(payload);
-      }
+      print('Notification tapped for task: $payload');
+      // Android gère le son système automatiquement
     }
   }
 
-
-  // Jouer le son associé à une tâche
-  Future<void> _playTaskSound(String taskId) async {
-    try {
-      print('Lecture du son pour la tâche: $taskId');
-
-      // Récupérer la tâche depuis la base de données
-      final dbService = DatabaseService();
-      final tasks = await dbService.getAllTasks();
-      final task = tasks.firstWhere(
-        (t) => t.id == taskId,
-        orElse: () => throw Exception('Tâche non trouvée'),
-      );
-
-      // Jouer le son approprié - maintenant seulement les sons système
-      if (task.soundEnabled) {
-        await AudioService().playDefaultSound();
-        print('Son système joué pour la tâche: ${task.title}');
-      } else {
-        print('Son désactivé pour la tâche: ${task.title}');
-      }
-    } catch (e) {
-      print('Erreur lors de la lecture du son de la tâche: $e');
-      // En cas d'erreur, jouer un son par défaut
-      await AudioService().playDefaultSound();
-    }
-  }
 
   // Programmer une notification pour une tâche
   Future<void> scheduleTaskNotification(Task task) async {
@@ -293,91 +204,16 @@ class NotificationService {
         return;
       }
 
-      // Déterminer le canal, la catégorie et le son selon la sélection
-      String channelId = 'task_reminders';
-      String channelName = 'Rappels de tâches';
-      AndroidNotificationCategory category = AndroidNotificationCategory.reminder;
-      dynamic notificationSound;
+      // Configuration simplifiée - utiliser seulement le son système par défaut
+      const String channelId = 'task_reminders_default';
+      const String channelName = 'Rappels de tâches';
+      const AndroidNotificationCategory category = AndroidNotificationCategory.reminder;
+      const dynamic notificationSound = null; // Utiliser le son système par défaut
       
-      // Utiliser les sons système Android directement
-      if (task.soundEnabled) {
-        if (task.customSoundUri != null && SoundService.isSystemSound(task.customSoundUri!)) {
-          final soundUri = task.customSoundUri!;
-          
-          // Configurer selon le type de son sélectionné
-          switch (soundUri) {
-            case 'default':
-            case 'notification':
-              channelId = 'task_reminders_default';
-              channelName = 'Notifications par défaut';
-              category = AndroidNotificationCategory.message;
-              notificationSound = null; // Son par défaut du système
-              break;
-            case 'alarm':
-              channelId = 'task_reminders_alarm';
-              channelName = 'Rappels d\'alarme';
-              category = AndroidNotificationCategory.alarm;
-              // Utiliser l'URI système Android pour l'alarme
-              try {
-                notificationSound = UriAndroidNotificationSound('content://settings/system/alarm_alert');
-              } catch (e) {
-                print('Erreur URI alarme, utilisation du son par défaut: $e');
-                notificationSound = null;
-              }
-              break;
-            case 'ringtone':
-              channelId = 'task_reminders_ringtone';
-              channelName = 'Rappels sonnerie';
-              category = AndroidNotificationCategory.call;
-              // Utiliser l'URI système Android pour la sonnerie
-              try {
-                notificationSound = UriAndroidNotificationSound('content://settings/system/ringtone');
-              } catch (e) {
-                print('Erreur URI sonnerie, utilisation du son par défaut: $e');
-                notificationSound = null;
-              }
-              break;
-            case 'media_button_click':
-              channelId = 'task_reminders_media';
-              channelName = 'Rappels média';
-              category = AndroidNotificationCategory.reminder;
-              notificationSound = null; // Utiliser le son par défaut pour les autres
-              break;
-            case 'keyboard_click':
-              channelId = 'task_reminders_keyboard';
-              channelName = 'Rappels clavier';
-              category = AndroidNotificationCategory.reminder;
-              notificationSound = null; // Utiliser le son par défaut pour les autres
-              break;
-            case 'camera_click':
-              channelId = 'task_reminders_camera';
-              channelName = 'Rappels caméra';
-              category = AndroidNotificationCategory.reminder;
-              notificationSound = null; // Utiliser le son par défaut pour les autres
-              break;
-            default:
-              channelId = 'task_reminders_custom';
-              channelName = 'Rappels personnalisés';
-              category = AndroidNotificationCategory.reminder;
-              notificationSound = null; // Son par défaut
-          }
-          print('=== CONFIGURATION SON SYSTÈME ===');
-          print('Son sélectionné: ${task.customSoundUri}');
-          print('Canal configuré: $channelId');
-          print('Nom du canal: $channelName');
-          print('Catégorie: $category');
-          print('Type de son: ${notificationSound.runtimeType}');
-          print('Valeur du son: $notificationSound');
-          print('=== FIN CONFIGURATION ===');
-        } else {
-          // Son système par défaut
-          notificationSound = null;
-          print('Utilisation du canal par défaut');
-        }
-      } else {
-        // Pas de son du tout
-        notificationSound = null;
-      }
+      print('=== CONFIGURATION SIMPLIFIÉE ===');
+      print('Son: système par défaut');
+      print('Vibration: ${task.vibrationEnabled ? "activée" : "désactivée"}');
+      print('=== FIN CONFIGURATION ===');
 
       // Créer la notification avec les paramètres de la tâche
       final AndroidNotificationDetails
@@ -389,8 +225,8 @@ class NotificationService {
         priority: Priority.max, // Priorité maximale
         showWhen: true,
         enableVibration: task.vibrationEnabled,
-        playSound: task.soundEnabled, // Toujours activer le son - la notification utilisera le son personnalisé ou système
-        sound: notificationSound,
+        playSound: task.soundEnabled, // Utiliser le son système par défaut
+        sound: notificationSound, // Son système par défaut
         ongoing: false, // Ne pas rendre la notification persistante
         autoCancel: true, // Permettre à l'utilisateur de fermer la notification
         category: category,
@@ -444,13 +280,16 @@ class NotificationService {
       final scheduledTime = tz.TZDateTime.from(task.fullDateTime, tz.local);
       print('Heure programmée (timezone): $scheduledTime');
       
+      // Payload simplifié - juste l'ID de la tâche
+      final String payload = task.id;
+      
       await _notifications.zonedSchedule(
         task.id.hashCode, // Utiliser le hash de l'ID comme ID de notification
         'Rappel de tâche',
         task.title,
         scheduledTime,
         details,
-        payload: task.id,
+        payload: payload,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
@@ -493,8 +332,6 @@ class NotificationService {
   Future<void> cancelTaskNotification(String taskId) async {
     if (!_isInitialized) await initialize();
     await _notifications.cancel(taskId.hashCode);
-    // Annuler aussi la notification de son personnalisé si elle existe
-    await _notifications.cancel(taskId.hashCode + 10000);
   }
 
   // Annuler toutes les notifications
@@ -715,32 +552,4 @@ class NotificationService {
     }
   }
 
-  // Méthode publique pour jouer le son d'une tâche
-  Future<void> playTaskSound(String taskId) async {
-    await _playTaskSound(taskId);
-  }
-
-  // Méthode publique pour jouer le son d'une tâche directement
-  Future<void> playTaskSoundFromTask(Task task) async {
-    try {
-      print('Lecture du son pour la tâche: ${task.title}');
-
-      if (task.soundEnabled) {
-        await AudioService().playDefaultSound();
-        print('Son système joué pour la tâche: ${task.title}');
-      } else {
-        print('Son désactivé pour la tâche: ${task.title}');
-      }
-    } catch (e) {
-      print('Erreur lors de la lecture du son de la tâche: $e');
-      await AudioService().playDefaultSound();
-    }
-  }
-
-  // Méthode publique pour jouer le son d'une tâche depuis une notification
-  Future<void> playTaskSoundFromNotification(String taskId) async {
-    await _playTaskSound(taskId);
-  }
-
-  // Cette méthode n'est plus nécessaire - les sons système sont gérés directement par Android
 }

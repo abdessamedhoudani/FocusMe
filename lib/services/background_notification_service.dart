@@ -3,9 +3,6 @@ import 'dart:isolate';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
-import 'db_service.dart';
-import 'audio_service.dart';
-import 'sound_service.dart';
 import '../models/task.dart';
 
 /// Service pour gérer les notifications en arrière-plan
@@ -13,7 +10,7 @@ class BackgroundNotificationService {
   static const String _isolateName = 'background_notification_isolate';
   static const String _portName = 'background_notification_port';
 
-  /// Point d'entrée pour l'isolate en arrière-plan
+  /// Point d'entrée pour l'isolate en arrière-plan - Simplifié
   @pragma('vm:entry-point')
   static Future<void> backgroundNotificationHandler(NotificationResponse response) async {
     print('=== BACKGROUND NOTIFICATION HANDLER ===');
@@ -23,19 +20,10 @@ class BackgroundNotificationService {
       // Initialiser les timezones dans l'isolate
       tz.initializeTimeZones();
       
-      // Récupérer la tâche depuis la base de données
-      final dbService = DatabaseService();
-      final tasks = await dbService.getAllTasks();
+      // Traitement simple - Android gère automatiquement les sons système
       final taskId = response.payload;
-      
       if (taskId != null) {
-        final task = tasks.firstWhere(
-          (t) => t.id == taskId,
-          orElse: () => throw Exception('Tâche non trouvée'),
-        );
-        
-        // Jouer le son de la tâche
-        await _playTaskSoundInBackground(task);
+        print('Notification traitée en arrière-plan pour tâche: $taskId');
       }
     } catch (e) {
       print('Erreur dans le handler de notification en arrière-plan: $e');
@@ -44,24 +32,6 @@ class BackgroundNotificationService {
     print('=== FIN BACKGROUND NOTIFICATION HANDLER ===');
   }
 
-  /// Jouer le son d'une tâche en arrière-plan
-  static Future<void> _playTaskSoundInBackground(Task task) async {
-    try {
-      print('Lecture du son en arrière-plan pour: ${task.title}');
-      
-      if (task.soundEnabled) {
-        // Avec les sons système, nous n'avons plus besoin de lecture personnalisée 
-        // car les notifications Android utilisent directement les sons système
-        await AudioService().playDefaultSound();
-        print('Son système joué en arrière-plan: ${task.title}');
-      } else {
-        print('Son désactivé pour la tâche: ${task.title}');
-      }
-    } catch (e) {
-      print('Erreur lors de la lecture du son en arrière-plan: $e');
-      await AudioService().playDefaultSound();
-    }
-  }
 
   /// Programmer une notification en arrière-plan
   static Future<void> scheduleBackgroundNotification(Task task) async {
@@ -91,24 +61,17 @@ class BackgroundNotificationService {
         onDidReceiveNotificationResponse: backgroundNotificationHandler,
       );
 
-      // Pour les notifications en arrière-plan, utiliser uniquement les sons système Android
-      String? soundUri;
-      if (task.soundEnabled) {
-        // Utiliser le son système par défaut d'Android
-        soundUri = null; // null = son système par défaut
-      }
-
-      // Créer la notification
+      // Configuration simplifiée - utiliser seulement le son système par défaut
       final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'background_task_reminders',
-        'Rappels de tâches en arrière-plan',
-        channelDescription: 'Notifications pour les rappels de tâches même quand l\'app est fermée',
-        importance: Importance.high,
-        priority: Priority.high,
+        'task_reminders_default',
+        'Rappels de tâches',
+        channelDescription: 'Notifications avec son système par défaut',
+        importance: Importance.max,
+        priority: Priority.max,
         showWhen: true,
         enableVibration: task.vibrationEnabled,
         playSound: task.soundEnabled,
-        sound: soundUri != null ? RawResourceAndroidNotificationSound(soundUri.split('/').last.split('.').first) : null,
+        sound: null, // Son système par défaut
         ongoing: false,
         autoCancel: true,
         category: AndroidNotificationCategory.reminder,
@@ -123,7 +86,6 @@ class BackgroundNotificationService {
         presentAlert: true,
         presentBadge: true,
         presentSound: task.soundEnabled,
-        sound: soundUri != null ? soundUri.split('/').last : null,
       );
 
       final NotificationDetails details = NotificationDetails(

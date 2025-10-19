@@ -4,7 +4,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../models/task.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../services/translation_service.dart';
-import '../services/sound_service.dart';
 
 class AddTaskPage extends StatefulWidget {
   final Task? task;
@@ -24,10 +23,6 @@ class _AddTaskPageState extends State<AddTaskPage> {
   TimeOfDay _selectedTime = TimeOfDay.now();
   bool _isLoading = false;
   bool _notificationsEnabled = true;
-  bool _soundEnabled = true;
-  bool _vibrationEnabled = false;
-  String _selectedSoundId = 'default';
-  bool _showNotificationSettings = false; // Toggle for notification settings
 
   bool get isEditing => widget.task != null;
 
@@ -40,9 +35,6 @@ class _AddTaskPageState extends State<AddTaskPage> {
       _selectedDate = widget.task!.date;
       _selectedTime = widget.task!.time;
       _notificationsEnabled = widget.task!.notificationsEnabled;
-      _soundEnabled = widget.task!.soundEnabled;
-      _vibrationEnabled = widget.task!.vibrationEnabled;
-      _selectedSoundId = widget.task!.customSoundUri ?? 'default';
     }
   }
 
@@ -317,9 +309,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
           date: _selectedDate,
           time: _selectedTime,
           notificationsEnabled: _notificationsEnabled,
-          soundEnabled: _soundEnabled,
-          vibrationEnabled: _vibrationEnabled,
-          customSoundUri: _selectedSoundId == 'default' ? null : _selectedSoundId,
+          soundEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
+          vibrationEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
+          customSoundUri: null, // Utiliser le son système par défaut
         );
         success = await viewModel.updateTask(updatedTask);
       } else {
@@ -331,9 +323,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
           date: _selectedDate,
           time: _selectedTime,
           notificationsEnabled: _notificationsEnabled,
-          soundEnabled: _soundEnabled,
-          vibrationEnabled: _vibrationEnabled,
-          customSoundUri: _selectedSoundId == 'default' ? null : _selectedSoundId,
+          soundEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
+          vibrationEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
+          customSoundUri: null, // Utiliser le son système par défaut
         );
       }
 
@@ -424,200 +416,17 @@ class _AddTaskPageState extends State<AddTaskPage> {
   }
 
   Widget _buildNotificationSettings() {
-    final theme = Theme.of(context);
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header avec toggle
-          InkWell(
-            onTap: () {
-              setState(() {
-                _showNotificationSettings = !_showNotificationSettings;
-              });
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.notifications,
-                    color: theme.colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      TranslationService.getTranslation(context, 'notificationSettings'),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    _showNotificationSettings 
-                        ? Icons.keyboard_arrow_up 
-                        : Icons.keyboard_arrow_down,
-                    color: theme.colorScheme.primary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Contenu pliable
-          if (_showNotificationSettings) ...[
-            const SizedBox(height: 16),
-          
-          // Notifications
-          SwitchListTile(
-            title: Text(TranslationService.getTranslation(context, 'enableNotifications')),
-            subtitle: Text(TranslationService.getTranslation(context, 'receiveNotifications')),
-            value: _notificationsEnabled,
-            onChanged: (value) {
-              setState(() {
-                _notificationsEnabled = value;
-                if (!value) {
-                  _soundEnabled = false;
-                  _vibrationEnabled = false;
-                }
-              });
-            },
-            contentPadding: EdgeInsets.zero,
-          ),
-          
-          // Son
-          SwitchListTile(
-            title: Text(TranslationService.getTranslation(context, 'enableSound')),
-            subtitle: Text(TranslationService.getTranslation(context, 'enableNotificationSound')),
-            value: _soundEnabled && _notificationsEnabled,
-            onChanged: _notificationsEnabled ? (value) {
-              setState(() {
-                _soundEnabled = value;
-              });
-            } : null,
-            contentPadding: EdgeInsets.zero,
-          ),
-          
-          // Vibration
-          SwitchListTile(
-            title: Text(TranslationService.getTranslation(context, 'enableVibration')),
-            subtitle: const Text('Vibrer lors de la notification'),
-            value: _vibrationEnabled && _notificationsEnabled,
-            onChanged: _notificationsEnabled ? (value) {
-              setState(() {
-                _vibrationEnabled = value;
-              });
-            } : null,
-            contentPadding: EdgeInsets.zero,
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Sélecteur de sonnerie
-          if (_soundEnabled && _notificationsEnabled) ...[
-            const Divider(),
-            const SizedBox(height: 8),
-            InkWell(
-              onTap: _showSoundSelector,
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.music_note,
-                      color: theme.colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            TranslationService.getTranslation(context, 'selectSound'),
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            SoundService.getSoundName(context, _selectedSoundId),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withOpacity(0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Affichage du son sélectionné
-            const SizedBox(height: 8),
-          ],
-          ], // Fermeture de la section pliable
-        ],
-      ),
+    return SwitchListTile(
+      title: Text(TranslationService.getTranslation(context, 'enableNotifications')),
+      subtitle: Text(TranslationService.getTranslation(context, 'receiveNotifications')),
+      value: _notificationsEnabled,
+      onChanged: (value) {
+        setState(() {
+          _notificationsEnabled = value;
+        });
+      },
     );
   }
 
 
-  void _showSoundSelector() {
-    final systemSounds = SoundService.getSystemSoundIds();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Choisir un son'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: systemSounds.length,
-            itemBuilder: (context, index) {
-              final soundId = systemSounds[index];
-              final isSelected = _selectedSoundId == soundId;
-              
-              return RadioListTile<String>(
-                title: Text(SoundService.getSoundName(context, soundId)),
-                value: soundId,
-                groupValue: _selectedSoundId,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedSoundId = value ?? 'default';
-                  });
-                  Navigator.of(context).pop();
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
-          ),
-        ],
-      ),
-    );
-  }
 }
