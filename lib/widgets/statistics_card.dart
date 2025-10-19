@@ -165,6 +165,7 @@ class DateRangeSelector extends StatelessWidget {
   final DateTime startDate;
   final DateTime endDate;
   final Function(DateTime, DateTime) onDateRangeChanged;
+  final Function(String)? onPresetSelected;
   final List<String> presetRanges;
   final String? selectedPreset;
 
@@ -173,7 +174,8 @@ class DateRangeSelector extends StatelessWidget {
     required this.startDate,
     required this.endDate,
     required this.onDateRangeChanged,
-    this.presetRanges = const ['7 jours', '30 jours', '3 mois', '6 mois'],
+    this.onPresetSelected,
+    this.presetRanges = const ['days7', 'days30', 'months3', 'months6'],
     this.selectedPreset,
   });
 
@@ -201,7 +203,7 @@ class DateRangeSelector extends StatelessWidget {
           children: presetRanges.map((preset) {
             final isSelected = selectedPreset == preset;
             return FilterChip(
-              label: Text(TranslationService.getTranslation(context, preset)),
+              label: Text(_getPresetLabel(context, preset)),
               selected: isSelected,
               onSelected: (selected) {
                 if (selected) {
@@ -242,29 +244,59 @@ class DateRangeSelector extends StatelessWidget {
     );
   }
 
+  String _getPresetLabel(BuildContext context, String preset) {
+    // Gérer les différents formats de presets pour l'affichage avec traductions
+    switch (preset) {
+      case 'days7':
+      case '7 jours':
+        return TranslationService.getTranslation(context, 'days7');
+      case 'days30':
+      case '30 jours':
+        return TranslationService.getTranslation(context, 'days30');
+      case 'months3':
+      case '3 mois':
+        return TranslationService.getTranslation(context, 'months3');
+      case 'months6':
+      case '6 mois':
+        return TranslationService.getTranslation(context, 'months6');
+      default:
+        return preset; // Fallback pour les formats existants
+    }
+  }
+
   void _selectPreset(String preset) {
     final now = DateTime.now();
     DateTime start, end;
     
+    // Gérer les différents formats de presets
     switch (preset) {
+      case 'days7':
       case '7 jours':
         start = now.subtract(const Duration(days: 7));
         end = now;
         break;
+      case 'days30':
       case '30 jours':
         start = now.subtract(const Duration(days: 30));
         end = now;
         break;
+      case 'months3':
       case '3 mois':
         start = DateTime(now.year, now.month - 3, now.day);
         end = now;
         break;
+      case 'months6':
       case '6 mois':
         start = DateTime(now.year, now.month - 6, now.day);
         end = now;
         break;
       default:
         return;
+    }
+    
+    // Notifier le parent de la sélection du preset
+    if (onPresetSelected != null) {
+      onPresetSelected!(preset);
     }
     
     onDateRangeChanged(start, end);

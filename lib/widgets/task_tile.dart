@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/task.dart';
+import '../services/translation_service.dart';
 
 class TaskTile extends StatelessWidget {
   final Task task;
@@ -164,7 +165,7 @@ class TaskTile extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'En retard',
+                              TranslationService.getTranslation(context, 'overdue'),
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: colorScheme.onErrorContainer,
                                 fontWeight: FontWeight.w600,

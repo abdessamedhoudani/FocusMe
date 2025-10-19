@@ -23,6 +23,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
   TimeOfDay _selectedTime = TimeOfDay.now();
   bool _isLoading = false;
   bool _notificationsEnabled = true;
+  TaskRecurrence _selectedRecurrence = TaskRecurrence.none;
 
   bool get isEditing => widget.task != null;
 
@@ -35,6 +36,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
       _selectedDate = widget.task!.date;
       _selectedTime = widget.task!.time;
       _notificationsEnabled = widget.task!.notificationsEnabled;
+      _selectedRecurrence = widget.task!.recurrence;
     }
   }
 
@@ -57,7 +59,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
             IconButton(
               onPressed: _deleteTask,
               icon: const Icon(Icons.delete),
-              tooltip: 'Supprimer',
+              tooltip: TranslationService.getTranslation(context, 'delete'),
             ),
         ],
       ),
@@ -92,6 +94,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   return null;
                 },
                 textInputAction: TextInputAction.next,
+                enableInteractiveSelection: true,
               ),
               
               const SizedBox(height: 24),
@@ -115,6 +118,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 ),
                 maxLines: 3,
                 textInputAction: TextInputAction.done,
+                enableInteractiveSelection: true,
               ),
               
               const SizedBox(height: 24),
@@ -124,16 +128,16 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 children: [
                   Expanded(
                     child: _dateTimeSelector(
-                      label: 'Date',
+                      label: TranslationService.getTranslation(context, 'date'),
                       icon: Icons.calendar_today,
-                      value: _formatDate(_selectedDate),
+                      value: _formatDate(context, _selectedDate),
                       onTap: _selectDate,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: _dateTimeSelector(
-                      label: 'Heure',
+                      label: TranslationService.getTranslation(context, 'time'),
                       icon: Icons.access_time,
                       value: _formatTime(_selectedTime),
                       onTap: _selectTime,
@@ -141,6 +145,11 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   ),
                 ],
               ),
+              
+              const SizedBox(height: 24),
+              
+              // Section récurrence
+              _buildRecurrenceSelector(),
               
               const SizedBox(height: 24),
               
@@ -299,9 +308,11 @@ class _AddTaskPageState extends State<AddTaskPage> {
     try {
       final viewModel = context.read<TaskViewModel>();
       bool success;
+      bool? updateAllOccurrences;
 
       if (isEditing) {
-        final updatedTask = widget.task!.copyWith(
+        final originalTask = widget.task!;
+        final updatedTask = originalTask.copyWith(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim().isEmpty 
               ? null 
@@ -312,8 +323,28 @@ class _AddTaskPageState extends State<AddTaskPage> {
           soundEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
           vibrationEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
           customSoundUri: null, // Utiliser le son système par défaut
+          recurrence: _selectedRecurrence,
         );
-        success = await viewModel.updateTask(updatedTask);
+
+        // Vérifier si c'est une tâche récurrente et s'il y a des changements significatifs
+        bool shouldAskUser = originalTask.recurrence != TaskRecurrence.none && 
+                           _hasSignificantChanges(originalTask, updatedTask);
+
+        if (shouldAskUser) {
+          // Demander à l'utilisateur ce qu'il veut faire
+          final updateChoice = await _showUpdateRecurringDialog();
+          if (updateChoice == null) {
+            setState(() {
+              _isLoading = false;
+            });
+            return; // L'utilisateur a annulé
+          }
+          updateAllOccurrences = updateChoice;
+          success = await viewModel.updateTask(updatedTask, updateAllOccurrences: updateChoice);
+        } else {
+          // Mise à jour normale (pas de récurrence ou changements mineurs)
+          success = await viewModel.updateTask(updatedTask);
+        }
       } else {
         success = await viewModel.addTask(
           title: _titleController.text.trim(),
@@ -326,18 +357,27 @@ class _AddTaskPageState extends State<AddTaskPage> {
           soundEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
           vibrationEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
           customSoundUri: null, // Utiliser le son système par défaut
+          recurrence: _selectedRecurrence,
         );
       }
 
       if (success && mounted) {
         Navigator.of(context).pop();
+        
+        String message;
+        if (isEditing) {
+          if (updateAllOccurrences == true) {
+            message = TranslationService.getTranslation(context, 'editAllSuccess');
+          } else {
+            message = TranslationService.getTranslation(context, 'editSuccess');
+          }
+        } else {
+          message = TranslationService.getTranslation(context, 'saveSuccess');
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              isEditing 
-                  ? 'Tâche modifiée avec succès' 
-                  : 'Tâche créée avec succès',
-            ),
+            content: Text(message),
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
@@ -346,7 +386,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text('${TranslationService.getTranslation(context, 'error')}: $e'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
@@ -361,33 +401,94 @@ class _AddTaskPageState extends State<AddTaskPage> {
   }
 
   Future<void> _deleteTask() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer la tâche'),
-        content: Text(
-          'Êtes-vous sûr de vouloir supprimer "${widget.task!.title}" ?',
+    final task = widget.task!;
+    final isRecurringTask = task.recurrence != TaskRecurrence.none;
+    
+    bool? confirmed;
+    bool deleteAllOccurrences = false;
+    
+    if (isRecurringTask) {
+      // Dialogue pour tâches récurrentes avec choix
+      final result = await showDialog<Map<String, bool>>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(TranslationService.getTranslation(context, 'deleteRecurringTitle')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(TranslationService.getTranslation(context, 'deleteRecurringMessage').replaceAll('{title}', task.title)),
+              const SizedBox(height: 16),
+              Text(TranslationService.getTranslation(context, 'deleteRecurringChoice')),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: Text(TranslationService.getTranslation(context, 'cancel')),
+            ),
+            // "Cette seule fois" est l'option par défaut (mise en évidence)
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop({
+                'confirmed': true, 
+                'deleteAllOccurrences': false
+              }),
+              child: Text(TranslationService.getTranslation(context, 'thisTimeOnly')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop({
+                'confirmed': true, 
+                'deleteAllOccurrences': true
+              }),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: Text(TranslationService.getTranslation(context, 'allOccurrences')),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler'),
+      );
+      
+      if (result != null) {
+        confirmed = result['confirmed'];
+        deleteAllOccurrences = result['deleteAllOccurrences'] ?? false;
+      }
+    } else {
+      // Dialogue simple pour tâches non récurrentes
+      confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(TranslationService.getTranslation(context, 'deleteTaskTitle')),
+          content: Text(
+            TranslationService.getTranslation(context, 'deleteTaskMessage').replaceAll('{title}', task.title),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(TranslationService.getTranslation(context, 'cancel')),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(TranslationService.getTranslation(context, 'delete')),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (confirmed == true && mounted) {
-      final success = await context.read<TaskViewModel>().deleteTask(widget.task!.id);
+      final success = await context.read<TaskViewModel>().deleteTask(
+        task.id, 
+        deleteAllOccurrences: deleteAllOccurrences
+      );
       if (success) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Tâche supprimée avec succès'),
+            content: Text(deleteAllOccurrences 
+              ? TranslationService.getTranslation(context, 'deleteAllOccurrencesSuccess')
+              : TranslationService.getTranslation(context, 'deleteSuccess')
+            ),
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
@@ -395,17 +496,17 @@ class _AddTaskPageState extends State<AddTaskPage> {
     }
   }
 
-  String _formatDate(DateTime date) {
+  String _formatDate(BuildContext context, DateTime date) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final taskDate = DateTime(date.year, date.month, date.day);
     
     if (taskDate == today) {
-      return 'Aujourd\'hui';
+      return TranslationService.getTranslation(context, 'today');
     } else if (taskDate == today.add(const Duration(days: 1))) {
-      return 'Demain';
+      return TranslationService.getTranslation(context, 'tomorrow');
     } else if (taskDate == today.subtract(const Duration(days: 1))) {
-      return 'Hier';
+      return TranslationService.getTranslation(context, 'yesterday');
     } else {
       return '${date.day}/${date.month}/${date.year}';
     }
@@ -428,5 +529,169 @@ class _AddTaskPageState extends State<AddTaskPage> {
     );
   }
 
+  Widget _buildRecurrenceSelector() {
+    final theme = Theme.of(context);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          TranslationService.getTranslation(context, 'recurrence'),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.3),
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<TaskRecurrence>(
+              value: _selectedRecurrence,
+              isExpanded: true,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              onChanged: (TaskRecurrence? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedRecurrence = newValue;
+                  });
+                }
+              },
+              items: TaskRecurrence.values.map<DropdownMenuItem<TaskRecurrence>>((TaskRecurrence value) {
+                return DropdownMenuItem<TaskRecurrence>(
+                  value: value,
+                  child: Row(
+                    children: [
+                      Icon(
+                        _getRecurrenceIcon(value),
+                        size: 20,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(_getRecurrenceDisplayName(context, value)),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        // Affichage du nombre de tâches qui seront créées
+        if (_selectedRecurrence != TaskRecurrence.none) ...[
+          const SizedBox(height: 8),
+          Text(
+            _getRecurrenceInfo(context),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _getRecurrenceInfo(BuildContext context) {
+    switch (_selectedRecurrence) {
+      case TaskRecurrence.none:
+        return '';
+      case TaskRecurrence.daily:
+        return TranslationService.getTranslation(context, 'recurrenceDailyInfo');
+      case TaskRecurrence.weekly:
+        return TranslationService.getTranslation(context, 'recurrenceWeeklyInfo');
+      case TaskRecurrence.monthly:
+        return TranslationService.getTranslation(context, 'recurrenceMonthlyInfo');
+      case TaskRecurrence.yearly:
+        return TranslationService.getTranslation(context, 'recurrenceYearlyInfo');
+    }
+  }
+
+  String _getRecurrenceDisplayName(BuildContext context, TaskRecurrence recurrence) {
+    switch (recurrence) {
+      case TaskRecurrence.none:
+        return TranslationService.getTranslation(context, 'recurrenceNone');
+      case TaskRecurrence.daily:
+        return TranslationService.getTranslation(context, 'recurrenceDaily');
+      case TaskRecurrence.weekly:
+        return TranslationService.getTranslation(context, 'recurrenceWeekly');
+      case TaskRecurrence.monthly:
+        return TranslationService.getTranslation(context, 'recurrenceMonthly');
+      case TaskRecurrence.yearly:
+        return TranslationService.getTranslation(context, 'recurrenceYearly');
+    }
+  }
+
+  IconData _getRecurrenceIcon(TaskRecurrence recurrence) {
+    switch (recurrence) {
+      case TaskRecurrence.none:
+        return Icons.clear;
+      case TaskRecurrence.daily:
+        return Icons.repeat;
+      case TaskRecurrence.weekly:
+        return Icons.date_range;
+      case TaskRecurrence.monthly:
+        return Icons.calendar_month;
+      case TaskRecurrence.yearly:
+        return Icons.event;
+    }
+  }
+
+  // Vérifier s'il y a des changements significatifs qui méritent de poser la question
+  bool _hasSignificantChanges(Task original, Task updated) {
+    // Vérifier les changements qui affectent toutes les occurrences
+    return original.title != updated.title ||
+           original.description != updated.description ||
+           original.time != updated.time ||
+           original.notificationsEnabled != updated.notificationsEnabled ||
+           original.recurrence != updated.recurrence;
+    // Note: on n'inclut pas la date car elle est spécifique à chaque occurrence
+  }
+
+  // Afficher le dialogue pour demander à l'utilisateur ce qu'il veut modifier
+  Future<bool?> _showUpdateRecurringDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(TranslationService.getTranslation(context, 'modifyRecurringTitle')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(TranslationService.getTranslation(context, 'modifyRecurringMessage').replaceAll('{title}', _titleController.text.trim())),
+            const SizedBox(height: 16),
+            Text(TranslationService.getTranslation(context, 'modifyRecurringChoice')),
+            const SizedBox(height: 8),
+            Text(
+              TranslationService.getTranslation(context, 'modifyRecurringExplanation'),
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(null),
+            child: Text(TranslationService.getTranslation(context, 'cancel')),
+          ),
+          // "Cette seule fois" est l'option par défaut (mise en évidence)
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(TranslationService.getTranslation(context, 'thisTimeOnly')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: Text(TranslationService.getTranslation(context, 'allOccurrences')),
+          ),
+        ],
+      ),
+    );
+  }
 
 }

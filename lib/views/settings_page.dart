@@ -83,93 +83,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   } : null,
                 ),
               ),
-              // Bouton de test des notifications
-              _SettingsTile(
-                icon: Icons.bug_report,
-                title: 'Test des notifications',
-                subtitle: 'Envoyer une notification de test',
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () async {
-                  print('=== TEST NOTIFICATION BOUTON CLIQUÉ ===');
-                  try {
-                    print('Tentative d\'envoi de notification de test...');
-                    await NotificationService().showImmediateNotification(
-                      title: 'Test FocusMe',
-                      body: 'Cette notification de test confirme que les notifications fonctionnent !',
-                    );
-                    print('Notification de test envoyée avec succès !');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Notification de test envoyée !'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } catch (e) {
-                    print('Erreur lors de l\'envoi de la notification de test: $e');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Erreur: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                  print('=== FIN TEST NOTIFICATION ===');
-                },
-              ),
-              _SettingsTile(
-                icon: Icons.schedule,
-                title: 'Vérifier les notifications programmées',
-                subtitle: 'Afficher les notifications en attente',
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () async {
-                  print('=== VÉRIFICATION NOTIFICATIONS PROGRAMMÉES ===');
-                  try {
-                    await NotificationService().checkScheduledNotifications();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Vérification terminée - voir les logs'),
-                        backgroundColor: Colors.blue,
-                      ),
-                    );
-                  } catch (e) {
-                    print('Erreur lors de la vérification: $e');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Erreur: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                  print('=== FIN VÉRIFICATION ===');
-                },
-              ),
-              _SettingsTile(
-                icon: Icons.timer,
-                title: 'Test notification programmée',
-                subtitle: 'Programmer une notification dans 30 secondes',
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () async {
-                  print('=== TEST NOTIFICATION PROGRAMMÉE ===');
-                  try {
-                    await NotificationService().scheduleTestNotification();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Notification de test programmée dans 30 secondes !'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  } catch (e) {
-                    print('Erreur lors de la programmation: $e');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Erreur: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                  print('=== FIN TEST NOTIFICATION PROGRAMMÉE ===');
-                },
-              ),
             ],
           ),
           
@@ -229,14 +142,14 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               _SettingsTile(
                 icon: Icons.help,
-                title: 'Aide',
-                subtitle: 'Comment utiliser FocusMe',
+                title: TranslationService.getTranslation(context, 'help'),
+                subtitle: TranslationService.getTranslation(context, 'helpSubtitle'),
                 onTap: () => _showHelpDialog(context),
               ),
               _SettingsTile(
                 icon: Icons.feedback,
-                title: 'Commentaires',
-                subtitle: 'Partager vos suggestions',
+                title: TranslationService.getTranslation(context, 'feedback'),
+                subtitle: TranslationService.getTranslation(context, 'feedbackSubtitle'),
                 onTap: () => _showFeedbackDialog(context),
               ),
             ],
@@ -250,27 +163,24 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Réinitialiser les tâches'),
-        content: const Text(
-          'Cette action marquera toutes les tâches comme non terminées. '
-          'Voulez-vous continuer ?',
-        ),
+        title: Text(TranslationService.getTranslation(context, 'resetTasksTitle')),
+        content: Text(TranslationService.getTranslation(context, 'resetTasksMessage')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+            child: Text(TranslationService.getTranslation(context, 'cancel')),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               context.read<TaskViewModel>().resetDailyTasks();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tâches réinitialisées avec succès'),
+                SnackBar(
+                  content: Text(TranslationService.getTranslation(context, 'resetSuccess')),
                 ),
               );
             },
-            child: const Text('Réinitialiser'),
+            child: Text(TranslationService.getTranslation(context, 'reset')),
           ),
         ],
       ),
@@ -281,27 +191,24 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer les tâches terminées'),
-        content: const Text(
-          'Cette action supprimera définitivement toutes les tâches terminées. '
-          'Cette action est irréversible.',
-        ),
+        title: Text(TranslationService.getTranslation(context, 'deleteCompletedTitle')),
+        content: Text(TranslationService.getTranslation(context, 'deleteCompletedMessage')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+            child: Text(TranslationService.getTranslation(context, 'cancel')),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               context.read<TaskViewModel>().deleteCompletedTasks();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tâches terminées supprimées avec succès'),
+                SnackBar(
+                  content: Text(TranslationService.getTranslation(context, 'deleteCompletedSuccess')),
                 ),
               );
             },
-            child: const Text('Supprimer'),
+            child: Text(TranslationService.getTranslation(context, 'delete')),
           ),
         ],
       ),
@@ -312,15 +219,12 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Supprimer toutes les tâches'),
-        content: const Text(
-          'Cette action supprimera définitivement TOUTES les tâches. '
-          'Cette action est irréversible.',
-        ),
+        title: Text(TranslationService.getTranslation(context, 'deleteAllTitle')),
+        content: Text(TranslationService.getTranslation(context, 'deleteAllMessage')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+            child: Text(TranslationService.getTranslation(context, 'cancel')),
           ),
           TextButton(
             onPressed: () async {
@@ -343,13 +247,13 @@ class _SettingsPageState extends State<SettingsPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(success 
-                    ? 'Toutes les tâches ont été supprimées'
-                    : 'Erreur lors de la suppression des tâches'),
+                    ? TranslationService.getTranslation(context, 'deleteAllSuccess')
+                    : TranslationService.getTranslation(context, 'deleteAllError')),
                   backgroundColor: success ? null : Colors.red,
                 ),
               );
             },
-            child: const Text('Supprimer tout'),
+            child: Text(TranslationService.getTranslation(context, 'deleteAll')),
           ),
         ],
       ),
@@ -366,18 +270,13 @@ class _SettingsPageState extends State<SettingsPage> {
         size: 64,
       ),
       children: [
-        const Text(
-          'FocusMe est une application de gestion des tâches quotidiennes '
-          'conçue pour vous aider à rester organisé et productif.',
-        ),
+        Text(TranslationService.getTranslation(context, 'aboutDescription')),
         const SizedBox(height: 16),
-        const Text(
-          'Fonctionnalités :',
-        ),
-        const Text('• Gestion complète des tâches (CRUD)'),
-        const Text('• Notifications automatiques'),
-        const Text('• Statistiques de productivité'),
-        const Text('• Interface moderne et intuitive'),
+        Text(TranslationService.getTranslation(context, 'features')),
+        Text(TranslationService.getTranslation(context, 'featureTasks')),
+        Text(TranslationService.getTranslation(context, 'featureNotifications')),
+        Text(TranslationService.getTranslation(context, 'featureStats')),
+        Text(TranslationService.getTranslation(context, 'featureInterface')),
       ],
     );
   }
@@ -386,42 +285,42 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Comment utiliser FocusMe'),
-        content: const SingleChildScrollView(
+        title: Text(TranslationService.getTranslation(context, 'helpTitle')),
+        content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Créer une tâche :',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                TranslationService.getTranslation(context, 'createTask'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              Text('• Appuyez sur le bouton "+" sur l\'écran principal'),
-              Text('• Remplissez le titre et la description'),
-              Text('• Choisissez la date et l\'heure'),
-              Text('• Appuyez sur "Créer"'),
-              SizedBox(height: 16),
+              Text(TranslationService.getTranslation(context, 'helpCreate1')),
+              Text(TranslationService.getTranslation(context, 'helpCreate2')),
+              Text(TranslationService.getTranslation(context, 'helpCreate3')),
+              Text(TranslationService.getTranslation(context, 'helpCreate4')),
+              const SizedBox(height: 16),
               Text(
-                'Gérer vos tâches :',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                TranslationService.getTranslation(context, 'manageTasks'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              Text('• Cochez les tâches terminées'),
-              Text('• Appuyez sur une tâche pour voir les détails'),
-              Text('• Utilisez les icônes pour modifier ou supprimer'),
-              SizedBox(height: 16),
+              Text(TranslationService.getTranslation(context, 'helpManage1')),
+              Text(TranslationService.getTranslation(context, 'helpManage2')),
+              Text(TranslationService.getTranslation(context, 'helpManage3')),
+              const SizedBox(height: 16),
               Text(
-                'Notifications :',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                TranslationService.getTranslation(context, 'helpNotifications'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              Text('• Les notifications apparaissent à l\'heure programmée'),
-              Text('• Appuyez sur la notification pour ouvrir la tâche'),
+              Text(TranslationService.getTranslation(context, 'helpNotif1')),
+              Text(TranslationService.getTranslation(context, 'helpNotif2')),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
+            child: Text(TranslationService.getTranslation(context, 'close')),
           ),
         ],
       ),
@@ -432,27 +331,24 @@ class _SettingsPageState extends State<SettingsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Commentaires'),
-        content: const Text(
-          'Nous apprécions vos commentaires ! '
-          'Envoyez-nous vos suggestions pour améliorer FocusMe.',
-        ),
+        title: Text(TranslationService.getTranslation(context, 'feedback')),
+        content: Text(TranslationService.getTranslation(context, 'feedbackMessage')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
+            child: Text(TranslationService.getTranslation(context, 'close')),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               // TODO: Implémenter l'envoi de commentaires
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Fonctionnalité à implémenter'),
+                SnackBar(
+                  content: Text(TranslationService.getTranslation(context, 'featureToImplement')),
                 ),
               );
             },
-            child: const Text('Envoyer'),
+            child: Text(TranslationService.getTranslation(context, 'send')),
           ),
         ],
       ),

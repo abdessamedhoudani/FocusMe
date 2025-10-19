@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../widgets/task_tile.dart';
 import '../services/translation_service.dart';
+import '../models/task.dart';
 import 'add_task_page.dart';
 import 'stats_page.dart';
 import 'settings_page.dart';
@@ -213,7 +214,7 @@ class _TasksTab extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  viewModel.getTodaySummary(),
+                  viewModel.getTodaySummaryTranslated(context),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: colorScheme.onPrimaryContainer,
                   ),
@@ -234,7 +235,7 @@ class _TasksTab extends StatelessWidget {
           const SizedBox(height: 8),
           
           Text(
-            viewModel.getMotivationalMessage(),
+            viewModel.getMotivationalMessageTranslated(context),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onPrimaryContainer.withOpacity(0.8),
             ),
@@ -309,26 +310,72 @@ class _TasksTab extends StatelessWidget {
   }
 
   void _showDeleteDialog(BuildContext context, task) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Supprimer la tâche'),
-        content: Text('Êtes-vous sûr de vouloir supprimer "${task.title}" ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Annuler'),
+    final isRecurringTask = task.recurrence != TaskRecurrence.none;
+    
+    if (isRecurringTask) {
+      // Dialogue pour tâches récurrentes avec choix
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(TranslationService.getTranslation(context, 'deleteRecurringTitle')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(TranslationService.getTranslation(context, 'deleteRecurringMessage').replaceAll('{title}', task.title)),
+              const SizedBox(height: 16),
+              Text(TranslationService.getTranslation(context, 'deleteRecurringChoice')),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.read<TaskViewModel>().deleteTask(task.id);
-            },
-            child: const Text('Supprimer'),
-          ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(TranslationService.getTranslation(context, 'cancel')),
+            ),
+            // "Cette seule fois" est l'option par défaut (mise en évidence)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.read<TaskViewModel>().deleteTask(task.id, deleteAllOccurrences: false);
+              },
+              child: Text(TranslationService.getTranslation(context, 'thisTimeOnly')),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.read<TaskViewModel>().deleteTask(task.id, deleteAllOccurrences: true);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: Text(TranslationService.getTranslation(context, 'allOccurrences')),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Dialogue simple pour tâches non récurrentes
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(TranslationService.getTranslation(context, 'deleteTaskTitle')),
+          content: Text(TranslationService.getTranslation(context, 'deleteTaskMessage').replaceAll('{title}', task.title)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(TranslationService.getTranslation(context, 'cancel')),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.read<TaskViewModel>().deleteTask(task.id);
+              },
+              child: Text(TranslationService.getTranslation(context, 'delete')),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
 

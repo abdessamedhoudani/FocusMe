@@ -20,7 +20,7 @@ class DatabaseService {
         String path = join(await getDatabasesPath(), 'focusme.db');
         return await openDatabase(
           path,
-          version: 3,
+          version: 4,
           onCreate: _onCreate,
           onUpgrade: _onUpgrade,
         );
@@ -41,7 +41,8 @@ class DatabaseService {
         notificationsEnabled INTEGER NOT NULL DEFAULT 1,
         soundEnabled INTEGER NOT NULL DEFAULT 1,
         vibrationEnabled INTEGER NOT NULL DEFAULT 0,
-        customSoundUri TEXT
+        customSoundUri TEXT,
+        recurrence TEXT NOT NULL DEFAULT 'none'
       )
     ''');
 
@@ -83,6 +84,18 @@ class DatabaseService {
       } catch (e) {
         // La colonne existe déjà, ignorer l'erreur
         print('Colonne customSoundUri déjà présente: $e');
+      }
+    }
+    
+    if (oldVersion < 4) {
+      // Ajouter la colonne recurrence
+      try {
+        await db.execute('''
+          ALTER TABLE tasks ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'none'
+        ''');
+      } catch (e) {
+        // La colonne existe déjà, ignorer l'erreur
+        print('Colonne recurrence déjà présente: $e');
       }
     }
   }

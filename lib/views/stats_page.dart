@@ -88,6 +88,69 @@ class _StatsPageState extends State<StatsPage> {
     }
   }
 
+  /// Vérifie si les dates actuelles correspondent à un preset
+  String? _getPresetForDateRange(DateTime start, DateTime end) {
+    final now = DateTime.now();
+    final nowNormalized = DateTime(now.year, now.month, now.day);
+    final startNormalized = DateTime(start.year, start.month, start.day);
+    final endNormalized = DateTime(end.year, end.month, end.day);
+
+    // Vérifier si la date de fin est aujourd'hui
+    if (endNormalized != nowNormalized) {
+      return null;
+    }
+
+    // Calculer la différence en jours
+    final daysDifference = nowNormalized.difference(startNormalized).inDays;
+
+    // Vérifier les presets exacts
+    switch (daysDifference) {
+      case 6: // 7 jours incluant aujourd'hui
+        return 'days7';
+      case 29: // 30 jours incluant aujourd'hui
+        return 'days30';
+      default:
+        // Pour les mois, vérifier si les dates correspondent exactement 
+        // à ce que génère la sélection de preset
+        if (_isDays30Preset(startNormalized, nowNormalized)) {
+          return 'days30';
+        } else if (_isDays7Preset(startNormalized, nowNormalized)) {
+          return 'days7';
+        } else if (_is3MonthsPreset(start, now)) {
+          return 'months3';
+        } else if (_is6MonthsPreset(start, now)) {
+          return 'months6';
+        }
+        return null;
+    }
+  }
+
+  bool _isDays7Preset(DateTime start, DateTime end) {
+    final expectedStart = end.subtract(const Duration(days: 7));
+    return _isSameDay(start, expectedStart);
+  }
+
+  bool _isDays30Preset(DateTime start, DateTime end) {
+    final expectedStart = end.subtract(const Duration(days: 30));
+    return _isSameDay(start, expectedStart);
+  }
+
+  bool _is3MonthsPreset(DateTime start, DateTime end) {
+    final expectedStart = DateTime(end.year, end.month - 3, end.day);
+    return _isSameDay(start, expectedStart);
+  }
+
+  bool _is6MonthsPreset(DateTime start, DateTime end) {
+    final expectedStart = DateTime(end.year, end.month - 6, end.day);
+    return _isSameDay(start, expectedStart);
+  }
+
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year && 
+           date1.month == date2.month && 
+           date1.day == date2.day;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,9 +181,15 @@ class _StatsPageState extends State<StatsPage> {
                         setState(() {
                           _startDate = start;
                           _endDate = end;
-                          _selectedPreset = null;
+                          // Vérifier si les nouvelles dates correspondent à un preset
+                          _selectedPreset = _getPresetForDateRange(start, end);
                         });
                         _loadStatistics();
+                      },
+                      onPresetSelected: (preset) {
+                        setState(() {
+                          _selectedPreset = preset;
+                        });
                       },
                       presetRanges: const ['days7', 'days30', 'months3', 'months6'],
                       selectedPreset: _selectedPreset,
@@ -250,7 +319,7 @@ class _StatsPageState extends State<StatsPage> {
                 ),
                 PieChartSectionData(
                   value: totalOverdue.toDouble(),
-                  title: 'En retard\n$totalOverdue',
+                  title: '${TranslationService.getTranslation(context, 'overdue')}\n$totalOverdue',
                   color: Theme.of(context).colorScheme.error,
                   radius: 60,
                   titleStyle: const TextStyle(

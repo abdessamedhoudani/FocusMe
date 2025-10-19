@@ -9,11 +9,21 @@ import '../models/task.dart';
 void notificationTapBackground(NotificationResponse notificationResponse) async {
   print('=== CALLBACK ARRIÈRE-PLAN DÉCLENCHÉ ===');
   final payload = notificationResponse.payload;
+  final actionId = notificationResponse.actionId;
   print('Payload reçu: $payload');
+  print('Action reçue: $actionId');
   
   if (payload != null) {
-    // Traitement simple - notification avec payload
-    print('Notification traitée avec payload: $payload');
+    if (actionId == 'complete') {
+      print('Action complete détectée en arrière-plan pour tâche: $payload');
+      // Ici on pourrait directement gérer la completion en arrière-plan
+      // Mais pour l'instant on se contente de log
+    } else if (actionId == 'snooze') {
+      print('Action snooze détectée en arrière-plan pour tâche: $payload');
+      // Ici on pourrait reprogrammer la notification
+    } else {
+      print('Notification principale tapée en arrière-plan avec payload: $payload');
+    }
   }
   print('=== FIN CALLBACK ARRIÈRE-PLAN ===');
 }
@@ -29,49 +39,79 @@ class NotificationService {
 
   bool _isInitialized = false;
   Future<void>? _initializationFuture;
+  
+  // Callback pour gérer les actions des notifications
+  Function(String taskId, String actionId)? _onNotificationAction;
+
+  // Définir le callback pour les actions des notifications
+  void setNotificationActionCallback(Function(String taskId, String actionId)? callback) {
+    print('Configuration du callback d\'action: ${callback != null}');
+    _onNotificationAction = callback;
+    print('Callback configuré: ${_onNotificationAction != null}');
+  }
 
   // Initialiser le service de notifications
   Future<void> initialize() async {
+    // Vérification immédiate sans print pour éviter la surcharge
     if (_isInitialized) {
-      print('NotificationService déjà initialisé');
       return;
     }
 
-    // Si une initialisation est déjà en cours, attendre qu'elle se termine
+    // Si une initialisation est déjà en cours, attendre brièvement puis abandonner
     if (_initializationFuture != null) {
-      print('Initialisation déjà en cours, attente...');
+      print('Initialisation déjà en cours, attente limitée...');
       try {
-        await _initializationFuture;
-        print('Attente de l\'initialisation terminée');
-        return;
+        // Timeout très court pour éviter les blocages
+        await _initializationFuture!.timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {
+            print('Timeout attente initialisation, abandon');
+            _initializationFuture = null; // Libérer pour une nouvelle tentative
+            return;
+          },
+        );
+        
+        // Si on arrive ici, l'initialisation s'est terminée
+        if (_isInitialized) return;
       } catch (e) {
-        print('Erreur lors de l\'attente de l\'initialisation: $e');
-        // Réinitialiser le future en cas d'erreur
-        _initializationFuture = null;
+        print('Erreur attente initialisation: $e');
+        _initializationFuture = null; // Libérer le verrou
+      }
+      
+      // Si toujours pas initialisé après l'attente, abandonner cette tentative
+      if (!_isInitialized) {
+        print('Abandon de l\'initialisation concurrente');
+        return;
       }
     }
 
-    print('Démarrage de l\'initialisation...');
-    _initializationFuture = _performInitialization();
+    print('Démarrage nouvelle initialisation...');
+    
+    // Créer le future de manière synchrone pour éviter les conditions de course
+    final initFuture = _performInitialization();
+    _initializationFuture = initFuture;
 
-    // Ajouter un timeout pour éviter les blocages
     try {
-      await _initializationFuture?.timeout(
-        const Duration(seconds: 10),
+      // Timeout plus court pour éviter les blocages longs
+      await initFuture.timeout(
+        const Duration(seconds: 8),
         onTimeout: () {
-          print('Timeout lors de l\'initialisation des notifications');
-          _isInitialized =
-              true; // Marquer comme initialisé même en cas de timeout
-          throw TimeoutException(
-            'Initialisation timeout',
-            const Duration(seconds: 10),
-          );
+          print('Timeout initialisation notifications');
+          // En cas de timeout, forcer l'état initialisé pour éviter les retries
+          _isInitialized = true;
+          return;
         },
       );
+      
+      _isInitialized = true;
+      print('Initialisation terminée avec succès');
+      
     } catch (e) {
-      print('Erreur ou timeout lors de l\'initialisation: $e');
-      _isInitialized =
-          true; // Marquer comme initialisé pour éviter les blocages futurs
+      print('Erreur initialisation: $e');
+      // En cas d'erreur, marquer comme initialisé pour éviter les tentatives infinies
+      _isInitialized = true;
+    } finally {
+      // Toujours libérer le verrou
       _initializationFuture = null;
     }
   }
@@ -130,9 +170,6 @@ class NotificationService {
       print('Stack trace: ${StackTrace.current}');
       // Continuer même si les notifications échouent
       _isInitialized = true;
-    } finally {
-      _initializationFuture =
-          null; // Réinitialiser pour permettre une nouvelle initialisation si nécessaire
     }
 
     print('=== FIN INITIALISATION NOTIFICATION SERVICE ===');
@@ -153,7 +190,7 @@ class NotificationService {
             'task_reminders_default',
             'Rappels de tâches',
             description: 'Notifications avec son système par défaut',
-            importance: Importance.max,
+            importance: Importance.high, // Utiliser high au lieu de max pour éviter les problèmes
             playSound: true,
             // Pas de son spécifique - Android utilisera le son système par défaut
           ),
@@ -165,12 +202,48 @@ class NotificationService {
     }
   }
 
-  // Gérer le tap sur une notification - Simplifié
+  // Gérer le tap sur une notification et les actions
   void _onNotificationTapped(NotificationResponse response) {
-    final payload = response.payload;
-    if (payload != null) {
-      print('Notification tapped for task: $payload');
-      // Android gère le son système automatiquement
+    try {
+      final payload = response.payload;
+      final actionId = response.actionId;
+      
+      print('=== NOTIFICATION TAPPED ===');
+      print('Payload: $payload');
+      print('Action: $actionId');
+      print('Callback configuré: ${_onNotificationAction != null}');
+      print('Type de callback: ${_onNotificationAction.runtimeType}');
+      
+      if (payload != null) {
+        if (actionId != null) {
+          // C'est une action sur un bouton de notification
+          print('Action sur notification: $actionId pour tâche: $payload');
+          
+          if (_onNotificationAction != null) {
+            try {
+              print('Appel du callback avec payload=$payload, actionId=$actionId');
+              _onNotificationAction!(payload, actionId);
+              print('Callback exécuté avec succès');
+            } catch (e) {
+              print('Erreur lors de l\'exécution de l\'action: $e');
+              print('Stack trace: ${StackTrace.current}');
+            }
+          } else {
+            print('ERREUR CRITIQUE: Callback d\'action non configuré !');
+            print('Réessai de configuration du callback...');
+            // Essayer de reconfigurer le callback si possible
+          }
+        } else {
+          // C'est un tap sur la notification principale
+          print('Tap sur notification principale pour tâche: $payload');
+        }
+      } else {
+        print('ERREUR: Payload null dans la réponse de notification');
+      }
+      print('=== FIN NOTIFICATION TAPPED ===');
+    } catch (e) {
+      print('Erreur dans _onNotificationTapped: $e');
+      print('Stack trace: ${StackTrace.current}');
     }
   }
 
@@ -216,32 +289,29 @@ class NotificationService {
       print('=== FIN CONFIGURATION ===');
 
       // Créer la notification avec les paramètres de la tâche
-      final AndroidNotificationDetails
-      androidDetails = AndroidNotificationDetails(
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
         channelId,
         channelName,
         channelDescription: 'Notifications pour les rappels de tâches',
-        importance: Importance.max, // Importance maximale
-        priority: Priority.max, // Priorité maximale
+        importance: Importance.high, // Importance élevée mais pas max pour éviter les problèmes
+        priority: Priority.high, // Priorité élevée mais pas max
         showWhen: true,
         enableVibration: task.vibrationEnabled,
-        playSound: task.soundEnabled, // Utiliser le son système par défaut
-        sound: notificationSound, // Son système par défaut
-        ongoing: false, // Ne pas rendre la notification persistante
-        autoCancel: true, // Permettre à l'utilisateur de fermer la notification
+        playSound: task.soundEnabled,
+        sound: notificationSound,
+        ongoing: false,
+        autoCancel: true,
         category: category,
         visibility: NotificationVisibility.public,
-        fullScreenIntent:
-            true, // Afficher en plein écran pour forcer l'affichage
+        fullScreenIntent: false, // Désactiver pour éviter l'écran noir
         usesChronometer: false,
         showProgress: false,
         maxProgress: 0,
-        onlyAlertOnce: false, // Permettre plusieurs alertes
+        onlyAlertOnce: false,
         channelShowBadge: true,
         icon: '@mipmap/ic_launcher',
         largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
         styleInformation: const BigTextStyleInformation(''),
-        // Paramètres pour forcer l'affichage
         ticker: 'Rappel de tâche: ${task.title}',
         when: task.fullDateTime.millisecondsSinceEpoch,
         indeterminate: false,
@@ -249,12 +319,12 @@ class NotificationService {
           const AndroidNotificationAction(
             'complete',
             'Marquer comme terminé',
-            showsUserInterface: true,
+            showsUserInterface: true, // Réactiver pour que les boutons soient cliquables
           ),
           const AndroidNotificationAction(
             'snooze',
             'Reporter',
-            showsUserInterface: true,
+            showsUserInterface: true, // Réactiver pour que les boutons soient cliquables
           ),
         ],
       );
@@ -507,12 +577,12 @@ class NotificationService {
             'Notifications de test',
             channelDescription:
                 'Notifications de test pour vérifier le système',
-            importance: Importance.max,
-            priority: Priority.max,
+            importance: Importance.high, // Utiliser high au lieu de max
+            priority: Priority.high, // Utiliser high au lieu de max
             showWhen: true,
             enableVibration: true,
             playSound: true,
-            fullScreenIntent: true,
+            fullScreenIntent: false, // Désactiver pour éviter l'écran noir
             category: AndroidNotificationCategory.reminder,
             visibility: NotificationVisibility.public,
             channelShowBadge: true,

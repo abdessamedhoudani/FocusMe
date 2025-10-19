@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 // import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -31,22 +32,19 @@ class FocusMeApp extends StatelessWidget {
       ],
       child: Consumer<LanguageService>(
         builder: (context, languageService, child) {
-    return MaterialApp(
+          return MaterialApp(
             title: 'FocusMe',
             debugShowCheckedModeBanner: false,
             theme: _buildTheme(),
-            home: const HomePage(),
-            
-                // Configuration de l'internationalisation
-                locale: languageService.currentLocale,
-            
-            // Initialiser la langue sauvegardée
-            builder: (context, child) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                languageService.loadSavedLanguage();
-              });
-              return child!;
-            },
+            home: const _AppInitializer(),
+            // Configuration de l'internationalisation
+            locale: languageService.currentLocale,
+            supportedLocales: LanguageService.supportedLocales,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
           );
         },
       ),
@@ -118,5 +116,28 @@ class FocusMeApp extends StatelessWidget {
         elevation: 8,
       ),
     );
+  }
+}
+
+class _AppInitializer extends StatefulWidget {
+  const _AppInitializer();
+
+  @override
+  State<_AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<_AppInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialiser la langue sauvegardée au démarrage
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LanguageService>().loadSavedLanguage();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const HomePage();
   }
 }

@@ -14,6 +14,7 @@ class Task {
   final bool soundEnabled;
   final bool vibrationEnabled;
   final String? customSoundUri;
+  final TaskRecurrence recurrence;
 
   Task({
     String? id,
@@ -28,6 +29,7 @@ class Task {
     this.soundEnabled = true,
     this.vibrationEnabled = false,
     this.customSoundUri,
+    this.recurrence = TaskRecurrence.none,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now();
 
@@ -47,6 +49,7 @@ class Task {
       'soundEnabled': soundEnabled ? 1 : 0,
       'vibrationEnabled': vibrationEnabled ? 1 : 0,
       'customSoundUri': customSoundUri,
+      'recurrence': recurrence.name,
     };
   }
 
@@ -67,6 +70,10 @@ class Task {
       soundEnabled: map['soundEnabled'] == 1,
       vibrationEnabled: map['vibrationEnabled'] == 1,
       customSoundUri: map['customSoundUri'],
+      recurrence: TaskRecurrence.values.firstWhere(
+        (e) => e.name == map['recurrence'],
+        orElse: () => TaskRecurrence.none,
+      ),
     );
   }
 
@@ -84,6 +91,7 @@ class Task {
     bool? soundEnabled,
     bool? vibrationEnabled,
     String? customSoundUri,
+    TaskRecurrence? recurrence,
   }) {
     return Task(
       id: id ?? this.id,
@@ -98,6 +106,7 @@ class Task {
       soundEnabled: soundEnabled ?? this.soundEnabled,
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
       customSoundUri: customSoundUri ?? this.customSoundUri,
+      recurrence: recurrence ?? this.recurrence,
     );
   }
 
@@ -154,6 +163,14 @@ enum TaskStatus {
   overdue,
 }
 
+enum TaskRecurrence {
+  none,
+  daily,
+  weekly,
+  monthly,
+  yearly,
+}
+
 extension TaskStatusExtension on TaskStatus {
   String get displayName {
     switch (this) {
@@ -164,5 +181,94 @@ extension TaskStatusExtension on TaskStatus {
       case TaskStatus.overdue:
         return 'En retard';
     }
+  }
+}
+
+extension TaskRecurrenceExtension on TaskRecurrence {
+  String get displayName {
+    switch (this) {
+      case TaskRecurrence.none:
+        return 'Aucune répétition';
+      case TaskRecurrence.daily:
+        return 'Quotidien';
+      case TaskRecurrence.weekly:
+        return 'Hebdomadaire';
+      case TaskRecurrence.monthly:
+        return 'Mensuel';
+      case TaskRecurrence.yearly:
+        return 'Annuel';
+    }
+  }
+
+  String get shortDisplayName {
+    switch (this) {
+      case TaskRecurrence.none:
+        return 'Aucune';
+      case TaskRecurrence.daily:
+        return 'Jour';
+      case TaskRecurrence.weekly:
+        return 'Semaine';
+      case TaskRecurrence.monthly:
+        return 'Mois';
+      case TaskRecurrence.yearly:
+        return 'An';
+    }
+  }
+
+  /// Calcule la prochaine date de répétition basée sur la date actuelle
+  DateTime getNextDate(DateTime currentDate) {
+    switch (this) {
+      case TaskRecurrence.none:
+        return currentDate;
+      case TaskRecurrence.daily:
+        return currentDate.add(const Duration(days: 1));
+      case TaskRecurrence.weekly:
+        return currentDate.add(const Duration(days: 7));
+      case TaskRecurrence.monthly:
+        // Gérer les mois avec différents nombres de jours
+        int nextMonth = currentDate.month + 1;
+        int nextYear = currentDate.year;
+        if (nextMonth > 12) {
+          nextMonth = 1;
+          nextYear++;
+        }
+        
+        // Ajuster le jour si la prochaine date n'existe pas (ex: 31 janvier -> 28/29 février)
+        int day = currentDate.day;
+        try {
+          return DateTime(nextYear, nextMonth, day);
+        } catch (e) {
+          // Si le jour n'existe pas dans le mois suivant, prendre le dernier jour du mois
+          return DateTime(nextYear, nextMonth + 1, 0);
+        }
+      case TaskRecurrence.yearly:
+        try {
+          return DateTime(currentDate.year + 1, currentDate.month, currentDate.day);
+        } catch (e) {
+          // Gérer le cas du 29 février (années non bissextiles)
+          return DateTime(currentDate.year + 1, currentDate.month, currentDate.day - 1);
+        }
+    }
+  }
+
+  /// Génère les prochaines dates de répétition (limitée à un an ou 52 occurrences)
+  List<DateTime> generateNextDates(DateTime startDate, {int maxCount = 52}) {
+    if (this == TaskRecurrence.none) {
+      return [startDate];
+    }
+
+    List<DateTime> dates = [];
+    DateTime currentDate = DateTime(startDate.year, startDate.month, startDate.day);
+    
+    for (int i = 0; i < maxCount; i++) {
+      currentDate = getNextDate(currentDate);
+      // Limiter à un an dans le futur pour éviter trop d'occurrences
+      if (currentDate.isAfter(DateTime.now().add(const Duration(days: 365)))) {
+        break;
+      }
+      dates.add(currentDate);
+    }
+    
+    return dates;
   }
 }
