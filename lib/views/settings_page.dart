@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../services/preferences_service.dart';
 import '../services/language_service.dart';
 import '../services/translation_service.dart';
 import '../services/notification_service.dart';
+import 'categories_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -103,6 +106,27 @@ class _SettingsPageState extends State<SettingsPage> {
           
           const SizedBox(height: 32),
           
+          // Section catégories
+          _SettingsSection(
+            title: TranslationService.getTranslation(context, 'categories'),
+            children: [
+              _SettingsTile(
+                icon: Icons.category,
+                title: TranslationService.getTranslation(context, 'manageCategories'),
+                subtitle: TranslationService.getTranslation(context, 'manageCategoriesSubtitle'),
+                onTap: () => _navigateToCategories(context),
+              ),
+              _SettingsTile(
+                icon: Icons.refresh,
+                title: TranslationService.getTranslation(context, 'resetDefaultCategories'),
+                subtitle: TranslationService.getTranslation(context, 'resetDefaultCategoriesSubtitle'),
+                onTap: () => _showResetCategoriesDialog(context),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
           // Section gestion des données
           _SettingsSection(
             title: TranslationService.getTranslation(context, 'dataManagement'),
@@ -124,6 +148,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: TranslationService.getTranslation(context, 'deleteAllTasks'),
                 subtitle: TranslationService.getTranslation(context, 'clearAllData'),
                 onTap: () => _showDeleteAllDialog(context),
+              ),
+              _SettingsTile(
+                icon: Icons.cleaning_services,
+                title: TranslationService.getTranslation(context, 'cleanupDuplicates'),
+                subtitle: TranslationService.getTranslation(context, 'removeDuplicateTasks'),
+                onTap: () => _showCleanupDuplicatesDialog(context),
               ),
             ],
           ),
@@ -157,6 +187,66 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+  }
+
+  void _navigateToCategories(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const CategoriesPage(),
+      ),
+    );
+  }
+
+  void _showResetCategoriesDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(TranslationService.getTranslation(context, 'resetDefaultCategories')),
+        content: Text(TranslationService.getTranslation(context, 'resetDefaultCategoriesMessage')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(TranslationService.getTranslation(context, 'cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _resetDefaultCategories(context);
+            },
+            child: Text(TranslationService.getTranslation(context, 'reset')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _resetDefaultCategories(BuildContext context) async {
+    try {
+      // Obtenir la langue actuelle
+      final languageService = Provider.of<LanguageService>(context, listen: false);
+      final currentLanguage = languageService.currentLocale.languageCode;
+      
+      // Réinitialiser les catégories avec la langue actuelle
+      await context.read<TaskViewModel>().initializeCategoriesWithLanguage(currentLanguage);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(TranslationService.getTranslation(context, 'categoriesResetSuccess')),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${TranslationService.getTranslation(context, 'error')}: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   void _showResetDialog(BuildContext context) {
@@ -261,23 +351,54 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showAboutDialog(BuildContext context) {
-    showAboutDialog(
+    showDialog(
       context: context,
-      applicationName: 'FocusMe',
-      applicationVersion: '1.0.0',
-      applicationIcon: const Icon(
-        Icons.task_alt,
-        size: 64,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(
+              Icons.task_alt,
+              size: 32,
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('FocusMe'),
+                Text(
+                  '1.0.0',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(TranslationService.getTranslation(context, 'aboutDescription')),
+              const SizedBox(height: 16),
+              Text(
+                TranslationService.getTranslation(context, 'features'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(TranslationService.getTranslation(context, 'featureTasks')),
+              Text(TranslationService.getTranslation(context, 'featureNotifications')),
+              Text(TranslationService.getTranslation(context, 'featureStats')),
+              Text(TranslationService.getTranslation(context, 'featureInterface')),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(TranslationService.getTranslation(context, 'close')),
+          ),
+        ],
       ),
-      children: [
-        Text(TranslationService.getTranslation(context, 'aboutDescription')),
-        const SizedBox(height: 16),
-        Text(TranslationService.getTranslation(context, 'features')),
-        Text(TranslationService.getTranslation(context, 'featureTasks')),
-        Text(TranslationService.getTranslation(context, 'featureNotifications')),
-        Text(TranslationService.getTranslation(context, 'featureStats')),
-        Text(TranslationService.getTranslation(context, 'featureInterface')),
-      ],
     );
   }
 
@@ -328,31 +449,149 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showFeedbackDialog(BuildContext context) {
+    final feedbackController = TextEditingController();
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(TranslationService.getTranslation(context, 'feedback')),
-        content: Text(TranslationService.getTranslation(context, 'feedbackMessage')),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(TranslationService.getTranslation(context, 'feedbackMessage')),
+              const SizedBox(height: 16),
+              TextField(
+                controller: feedbackController,
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: TranslationService.getTranslation(context, 'feedbackHint'),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(TranslationService.getTranslation(context, 'close')),
+            child: Text(TranslationService.getTranslation(context, 'cancel')),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: Implémenter l'envoi de commentaires
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(TranslationService.getTranslation(context, 'featureToImplement')),
-                ),
-              );
-            },
+          ElevatedButton(
+            onPressed: () => _sendFeedback(context, feedbackController.text),
             child: Text(TranslationService.getTranslation(context, 'send')),
           ),
         ],
       ),
     );
+  }
+
+  void _sendFeedback(BuildContext context, String feedback) async {
+    Navigator.of(context).pop();
+    
+    if (feedback.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(TranslationService.getTranslation(context, 'feedbackEmpty')),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    // Créer le sujet et le corps de l'email
+    final subject = TranslationService.getTranslation(context, 'feedbackEmailSubject');
+    final emailBody = '''
+${TranslationService.getTranslation(context, 'feedbackEmailBody')}
+
+---
+${feedback.trim()}
+---
+
+${TranslationService.getTranslation(context, 'appInfo')}:
+- App: FocusMe v1.0.0
+- Platform: ${Theme.of(context).platform.name}
+- Date: ${DateTime.now().toIso8601String()}
+    ''';
+
+    try {
+      // Créer l'URL mailto
+      final Uri emailUri = Uri(
+        scheme: 'mailto',
+        path: 'abdessamed.houdani@gmail.com',
+        query: _encodeQueryParameters(<String, String>{
+          'subject': subject,
+          'body': emailBody,
+        }),
+      );
+
+      // Tenter d'ouvrir l'application email
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri);
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(TranslationService.getTranslation(context, 'feedbackEmailOpened')),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+            ),
+          );
+        }
+      } else {
+        // Si l'ouverture échoue, copier dans le presse-papiers comme fallback
+        await _fallbackCopyToClipboard(context, subject, emailBody);
+      }
+    } catch (e) {
+      // En cas d'erreur, utiliser le fallback
+      await _fallbackCopyToClipboard(context, subject, emailBody);
+    }
+  }
+
+  String _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+  }
+
+  Future<void> _fallbackCopyToClipboard(BuildContext context, String subject, String emailBody) async {
+    try {
+      final fullContent = '''
+Email à: abdessamed.houdani@gmail.com
+Sujet: $subject
+
+$emailBody
+      ''';
+      
+      await Clipboard.setData(ClipboardData(text: fullContent));
+      
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(TranslationService.getTranslation(context, 'feedbackFallbackTitle')),
+            content: Text(TranslationService.getTranslation(context, 'feedbackFallbackMessage')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(TranslationService.getTranslation(context, 'ok')),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${TranslationService.getTranslation(context, 'error')}: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   void _showLanguageDialog(BuildContext context) {
@@ -395,6 +634,47 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  void _showCleanupDuplicatesDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(TranslationService.getTranslation(context, 'cleanupDuplicates')),
+        content: Text(TranslationService.getTranslation(context, 'cleanupDuplicatesMessage')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(TranslationService.getTranslation(context, 'cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              try {
+                await context.read<TaskViewModel>().cleanupDuplicateTasks();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(TranslationService.getTranslation(context, 'cleanupDuplicatesSuccess')),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${TranslationService.getTranslation(context, 'error')}: $e'),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text(TranslationService.getTranslation(context, 'cleanup')),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SettingsSection extends StatelessWidget {

@@ -283,6 +283,7 @@ class _TasksTab extends StatelessWidget {
       onTaskToggle: (task) => viewModel.toggleTaskCompletion(task.id),
       onTaskEdit: (task) => _navigateToEditTask(context, task),
       onTaskDelete: (task) => _showDeleteDialog(context, task),
+      showDate: true, // Afficher la date pour les tâches en retard
       emptyMessage: TranslationService.getTranslation(context, 'noOverdueTasks'),
     );
   }

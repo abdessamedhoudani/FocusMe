@@ -5,10 +5,12 @@ import '../models/task.dart';
 import '../services/db_service.dart';
 import '../services/notification_service.dart';
 import '../services/translation_service.dart';
+import '../services/category_service.dart';
 
 class TaskViewModel extends ChangeNotifier {
   final DatabaseService _dbService = DatabaseService();
   final NotificationService _notificationService = NotificationService();
+  final CategoryService _categoryService = CategoryService();
 
   List<Task> _tasks = [];
   List<Task> _todayTasks = [];
@@ -59,6 +61,9 @@ class TaskViewModel extends ChangeNotifier {
       // Charger les tâches en premier (plus rapide)
       await loadAllTasks();
       
+      // Initialiser les catégories par défaut en arrière-plan
+      _initializeCategoriesAsync();
+      
       // Permettre à l'UI de se charger avant d'initialiser les notifications
       await Future.delayed(const Duration(milliseconds: 50));
       
@@ -102,6 +107,26 @@ class TaskViewModel extends ChangeNotifier {
     } catch (e) {
       print('Erreur notifications (non bloquant): $e');
       // Le callback reste configuré même en cas d'erreur
+    }
+  }
+
+  // Initialiser les catégories par défaut de manière asynchrone
+  void _initializeCategoriesAsync() async {
+    try {
+      // Utiliser le français par défaut pour l'initialisation
+      // Les catégories peuvent être traduites manuellement par l'utilisateur
+      await _categoryService.createDefaultCategories(language: 'fr');
+    } catch (e) {
+      print('Erreur lors de l\'initialisation des catégories: $e');
+    }
+  }
+
+  // Méthode publique pour initialiser les catégories avec une langue spécifique
+  Future<void> initializeCategoriesWithLanguage(String language) async {
+    try {
+      await _categoryService.createDefaultCategories(language: language);
+    } catch (e) {
+      print('Erreur lors de l\'initialisation des catégories avec la langue $language: $e');
     }
   }
 
@@ -183,6 +208,9 @@ class TaskViewModel extends ChangeNotifier {
       
       print('Chargement de ${_tasks.length} tâches depuis la base de données');
       
+      // Nettoyer les doublons potentiels
+      _removeDuplicateTasks();
+      
       // Mettre à jour les tâches d'aujourd'hui et en retard immédiatement
       await _updateTodayTasks();
       await _updateOverdueTasks();
@@ -198,6 +226,28 @@ class TaskViewModel extends ChangeNotifier {
     }
   }
 
+  // Nettoyer les doublons de tâches
+  void _removeDuplicateTasks() {
+    final seen = <String>{};
+    final uniqueTasks = <Task>[];
+    
+    for (final task in _tasks) {
+      // Créer une clé unique basée sur les propriétés importantes
+      final key = '${task.title}_${task.date}_${task.time.hour}_${task.time.minute}_${task.description ?? ''}_${task.categoryId ?? ''}';
+      
+      if (!seen.contains(key)) {
+        seen.add(key);
+        uniqueTasks.add(task);
+      } else {
+        print('Doublon détecté et supprimé: ${task.title} - ${task.date}');
+      }
+    }
+    
+    if (_tasks.length != uniqueTasks.length) {
+      print('${_tasks.length - uniqueTasks.length} doublons supprimés');
+      _tasks = uniqueTasks;
+    }
+  }
 
   // Mettre à jour les tâches d'aujourd'hui
   Future<void> _updateTodayTasks() async {
@@ -222,6 +272,7 @@ class TaskViewModel extends ChangeNotifier {
     bool vibrationEnabled = false,
     String? customSoundUri,
     TaskRecurrence recurrence = TaskRecurrence.none,
+    String? categoryId,
   }) async {
     try {
       final task = Task(
@@ -234,6 +285,7 @@ class TaskViewModel extends ChangeNotifier {
         vibrationEnabled: vibrationEnabled,
         customSoundUri: customSoundUri,
         recurrence: recurrence,
+        categoryId: categoryId,
       );
 
       // Ajouter seulement la tâche originale (les répétitions seront générées dynamiquement)
@@ -288,6 +340,9 @@ class TaskViewModel extends ChangeNotifier {
           _generateNextRecurringTasks(task, futureLimit);
         }
       }
+      
+      // Nettoyer les doublons après génération
+      _removeDuplicateTasks();
     } finally {
       _isGeneratingRecurringTasks = false;
     }
@@ -332,6 +387,9 @@ class TaskViewModel extends ChangeNotifier {
         }
       }
       
+      // Nettoyer les doublons après génération
+      _removeDuplicateTasks();
+      
       // Mettre à jour l'UI à la fin
       await _updateTodayTasks();
       await _updateOverdueTasks();
@@ -370,10 +428,13 @@ class TaskViewModel extends ChangeNotifier {
     final now = DateTime.now();
     final pastLimit = now.subtract(const Duration(days: 7)); // Ne pas générer de tâches trop anciennes
     
+    // Améliorer la détection des doublons en utilisant une clé unique
     final existingDates = _tasks
         .where((t) => t.title == originalTask.title && 
                      t.recurrence == originalTask.recurrence && 
-                     t.time == originalTask.time)
+                     t.time == originalTask.time &&
+                     t.description == originalTask.description &&
+                     t.categoryId == originalTask.categoryId)
         .map((t) => DateTime(t.date.year, t.date.month, t.date.day))
         .toSet();
 
@@ -466,8 +527,8 @@ class TaskViewModel extends ChangeNotifier {
     try {
       await _dbService.insertTask(task);
       
-      // Programmer la notification si nécessaire
-      if (task.fullDateTime.isAfter(DateTime.now())) {
+      // Programmer la notification seulement pour les tâches d'aujourd'hui
+      if (task.isToday && task.fullDateTime.isAfter(DateTime.now())) {
         _scheduleNotificationAsync(task);
       }
     } catch (e) {
@@ -485,8 +546,8 @@ class TaskViewModel extends ChangeNotifier {
     try {
       await _dbService.insertTask(task);
       
-      // Programmer la notification si nécessaire, mais éviter les appels récursifs
-      if (task.fullDateTime.isAfter(DateTime.now()) && !_isGeneratingRecurringTasks) {
+      // Programmer la notification seulement pour les tâches d'aujourd'hui, mais éviter les appels récursifs
+      if (task.isToday && task.fullDateTime.isAfter(DateTime.now()) && !_isGeneratingRecurringTasks) {
         _scheduleNotificationAsync(task);
       }
     } catch (e) {
@@ -742,9 +803,9 @@ class TaskViewModel extends ChangeNotifier {
       await _dbService.uncompleteTask(taskId);
       await loadAllTasks();
       
-      // Reprogrammer la notification si nécessaire
+      // Reprogrammer la notification seulement pour les tâches d'aujourd'hui
       final task = _tasks.firstWhere((t) => t.id == taskId);
-      if (task.fullDateTime.isAfter(DateTime.now())) {
+      if (task.isToday && task.fullDateTime.isAfter(DateTime.now())) {
         await _notificationService.scheduleTaskNotification(task);
       }
       
@@ -890,6 +951,21 @@ class TaskViewModel extends ChangeNotifier {
   Future<void> cleanupNotifications() async {
     final existingTaskIds = _tasks.map((task) => task.id).toList();
     await _notificationService.cleanupNotifications(existingTaskIds);
+  }
+
+  // Nettoyer les doublons manuellement
+  Future<void> cleanupDuplicateTasks() async {
+    final initialCount = _tasks.length;
+    _removeDuplicateTasks();
+    
+    await _updateTodayTasks();
+    await _updateOverdueTasks();
+    notifyListeners();
+    
+    final removedCount = initialCount - _tasks.length;
+    if (removedCount > 0) {
+      print('$removedCount doublons supprimés manuellement');
+    }
   }
 
 

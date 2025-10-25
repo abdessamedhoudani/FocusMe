@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/task.dart';
+import '../models/category.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
@@ -20,13 +21,26 @@ class DatabaseService {
         String path = join(await getDatabasesPath(), 'focusme.db');
         return await openDatabase(
           path,
-          version: 4,
+          version: 5,
           onCreate: _onCreate,
           onUpgrade: _onUpgrade,
         );
       }
 
   Future<void> _onCreate(Database db, int version) async {
+    // Créer la table des catégories
+    await db.execute('''
+      CREATE TABLE categories(
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        color INTEGER NOT NULL,
+        description TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT
+      )
+    ''');
+
+    // Créer la table des tâches avec référence aux catégories
     await db.execute('''
       CREATE TABLE tasks(
         id TEXT PRIMARY KEY,
@@ -42,7 +56,9 @@ class DatabaseService {
         soundEnabled INTEGER NOT NULL DEFAULT 1,
         vibrationEnabled INTEGER NOT NULL DEFAULT 0,
         customSoundUri TEXT,
-        recurrence TEXT NOT NULL DEFAULT 'none'
+        recurrence TEXT NOT NULL DEFAULT 'none',
+        categoryId TEXT,
+        FOREIGN KEY (categoryId) REFERENCES categories (id)
       )
     ''');
 
@@ -54,6 +70,16 @@ class DatabaseService {
     // Créer un index sur isCompleted pour filtrer les tâches terminées
     await db.execute('''
       CREATE INDEX idx_tasks_completed ON tasks(isCompleted)
+    ''');
+
+    // Créer un index sur categoryId pour des requêtes plus rapides
+    await db.execute('''
+      CREATE INDEX idx_tasks_category ON tasks(categoryId)
+    ''');
+
+    // Créer un index sur le nom des catégories
+    await db.execute('''
+      CREATE INDEX idx_categories_name ON categories(name)
     ''');
   }
 
@@ -96,6 +122,38 @@ class DatabaseService {
       } catch (e) {
         // La colonne existe déjà, ignorer l'erreur
         print('Colonne recurrence déjà présente: $e');
+      }
+    }
+    
+    if (oldVersion < 5) {
+      // Ajouter la table des catégories et la colonne categoryId
+      try {
+        // Créer la table des catégories
+        await db.execute('''
+          CREATE TABLE categories(
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            color INTEGER NOT NULL,
+            description TEXT,
+            createdAt TEXT NOT NULL,
+            updatedAt TEXT
+          )
+        ''');
+        
+        // Ajouter la colonne categoryId aux tâches
+        await db.execute('''
+          ALTER TABLE tasks ADD COLUMN categoryId TEXT
+        ''');
+        
+        // Créer les index
+        await db.execute('''
+          CREATE INDEX idx_tasks_category ON tasks(categoryId)
+        ''');
+        await db.execute('''
+          CREATE INDEX idx_categories_name ON categories(name)
+        ''');
+      } catch (e) {
+        print('Erreur lors de la migration vers la version 5: $e');
       }
     }
   }
@@ -312,5 +370,83 @@ class DatabaseService {
     String path = join(await getDatabasesPath(), 'focusme.db');
     await databaseFactory.deleteDatabase(path);
     _database = null;
+  }
+
+  // ========== MÉTHODES POUR LES CATÉGORIES ==========
+
+  // Insérer une nouvelle catégorie
+  Future<String> insertCategory(Category category) async {
+    final db = await database;
+    await db.insert('categories', category.toMap());
+    return category.id;
+  }
+
+  // Obtenir toutes les catégories
+  Future<List<Category>> getAllCategories() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'categories',
+      orderBy: 'name ASC',
+    );
+
+    return List.generate(maps.length, (i) {
+      return Category.fromMap(maps[i]);
+    });
+  }
+
+  // Obtenir une catégorie par ID
+  Future<Category?> getCategoryById(String id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'categories',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return Category.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  // Mettre à jour une catégorie
+  Future<int> updateCategory(Category category) async {
+    final db = await database;
+    return await db.update(
+      'categories',
+      category.copyWith(updatedAt: DateTime.now()).toMap(),
+      where: 'id = ?',
+      whereArgs: [category.id],
+    );
+  }
+
+  // Supprimer une catégorie
+  Future<int> deleteCategory(String id) async {
+    final db = await database;
+    
+    // D'abord, mettre à jour toutes les tâches qui utilisent cette catégorie
+    await db.update(
+      'tasks',
+      {'categoryId': null},
+      where: 'categoryId = ?',
+      whereArgs: [id],
+    );
+    
+    // Ensuite, supprimer la catégorie
+    return await db.delete(
+      'categories',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // Vérifier si une catégorie est utilisée par des tâches
+  Future<bool> isCategoryInUse(String categoryId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM tasks WHERE categoryId = ?',
+      [categoryId],
+    );
+    return (result.first['count'] as int) > 0;
   }
 }

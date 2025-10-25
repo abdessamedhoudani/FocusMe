@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/task.dart';
+import '../models/category.dart';
 import '../viewmodels/task_viewmodel.dart';
 import '../services/translation_service.dart';
+import '../services/category_service.dart';
 
 class AddTaskPage extends StatefulWidget {
   final Task? task;
@@ -24,6 +26,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
   bool _isLoading = false;
   bool _notificationsEnabled = true;
   TaskRecurrence _selectedRecurrence = TaskRecurrence.none;
+  String? _selectedCategoryId;
+  List<Category> _categories = [];
+  final CategoryService _categoryService = CategoryService();
 
   bool get isEditing => widget.task != null;
 
@@ -37,7 +42,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
       _selectedTime = widget.task!.time;
       _notificationsEnabled = widget.task!.notificationsEnabled;
       _selectedRecurrence = widget.task!.recurrence;
+      _selectedCategoryId = widget.task!.categoryId;
     }
+    _loadCategories();
   }
 
   @override
@@ -45,6 +52,17 @@ class _AddTaskPageState extends State<AddTaskPage> {
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await _categoryService.getAllCategories();
+      setState(() {
+        _categories = categories;
+      });
+    } catch (e) {
+      print('Erreur lors du chargement des catégories: $e');
+    }
   }
 
   @override
@@ -120,6 +138,11 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 textInputAction: TextInputAction.done,
                 enableInteractiveSelection: true,
               ),
+              
+              const SizedBox(height: 24),
+              
+              // Catégorie
+              _buildCategorySelector(),
               
               const SizedBox(height: 24),
               
@@ -298,6 +321,142 @@ class _AddTaskPageState extends State<AddTaskPage> {
     }
   }
 
+  Widget _buildCategorySelector() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          TranslationService.getTranslation(context, 'category'),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _showCategoryDialog,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: colorScheme.outline),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.category,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _getSelectedCategoryName(),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.arrow_drop_down,
+                  color: colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getSelectedCategoryName() {
+    if (_selectedCategoryId == null) {
+      return TranslationService.getTranslation(context, 'noCategory');
+    }
+    
+    final category = _categories.firstWhere(
+      (cat) => cat.id == _selectedCategoryId,
+      orElse: () => Category.create(name: '', color: Colors.grey),
+    );
+    
+    return category.name.isNotEmpty ? category.name : TranslationService.getTranslation(context, 'noCategory');
+  }
+
+  void _showCategoryDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(TranslationService.getTranslation(context, 'selectCategory')),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Option "Aucune catégorie"
+              ListTile(
+                leading: Icon(
+                  Icons.category_outlined,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                ),
+                title: Text(TranslationService.getTranslation(context, 'noCategory')),
+                onTap: () {
+                  setState(() {
+                    _selectedCategoryId = null;
+                  });
+                  Navigator.of(context).pop();
+                },
+                selected: _selectedCategoryId == null,
+              ),
+              const Divider(),
+              // Liste des catégories
+              ..._categories.map((category) => ListTile(
+                leading: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: category.color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: category.color, width: 2),
+                  ),
+                  child: Icon(
+                    Icons.category,
+                    color: category.color,
+                    size: 16,
+                  ),
+                ),
+                title: Text(category.name),
+                subtitle: category.description != null && category.description!.isNotEmpty
+                    ? Text(
+                        category.description!,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    : null,
+                onTap: () {
+                  setState(() {
+                    _selectedCategoryId = category.id;
+                  });
+                  Navigator.of(context).pop();
+                },
+                selected: _selectedCategoryId == category.id,
+              )),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(TranslationService.getTranslation(context, 'cancel')),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _saveTask() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -324,6 +483,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
           vibrationEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
           customSoundUri: null, // Utiliser le son système par défaut
           recurrence: _selectedRecurrence,
+          categoryId: _selectedCategoryId,
         );
 
         // Vérifier si c'est une tâche récurrente et s'il y a des changements significatifs
@@ -358,6 +518,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
           vibrationEnabled: _notificationsEnabled, // Toujours activé si les notifications sont activées
           customSoundUri: null, // Utiliser le son système par défaut
           recurrence: _selectedRecurrence,
+          categoryId: _selectedCategoryId,
         );
       }
 

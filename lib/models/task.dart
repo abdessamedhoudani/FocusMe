@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'category.dart';
 
 class Task {
   final String id;
@@ -15,6 +16,7 @@ class Task {
   final bool vibrationEnabled;
   final String? customSoundUri;
   final TaskRecurrence recurrence;
+  final String? categoryId;
 
   Task({
     String? id,
@@ -30,6 +32,7 @@ class Task {
     this.vibrationEnabled = false,
     this.customSoundUri,
     this.recurrence = TaskRecurrence.none,
+    this.categoryId,
   }) : id = id ?? const Uuid().v4(),
        createdAt = createdAt ?? DateTime.now();
 
@@ -50,6 +53,7 @@ class Task {
       'vibrationEnabled': vibrationEnabled ? 1 : 0,
       'customSoundUri': customSoundUri,
       'recurrence': recurrence.name,
+      'categoryId': categoryId,
     };
   }
 
@@ -74,6 +78,7 @@ class Task {
         (e) => e.name == map['recurrence'],
         orElse: () => TaskRecurrence.none,
       ),
+      categoryId: map['categoryId'],
     );
   }
 
@@ -92,6 +97,7 @@ class Task {
     bool? vibrationEnabled,
     String? customSoundUri,
     TaskRecurrence? recurrence,
+    String? categoryId,
   }) {
     return Task(
       id: id ?? this.id,
@@ -107,6 +113,7 @@ class Task {
       vibrationEnabled: vibrationEnabled ?? this.vibrationEnabled,
       customSoundUri: customSoundUri ?? this.customSoundUri,
       recurrence: recurrence ?? this.recurrence,
+      categoryId: categoryId ?? this.categoryId,
     );
   }
 

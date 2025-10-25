@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/task.dart';
+import '../models/category.dart';
 import '../services/translation_service.dart';
+import '../services/category_service.dart';
 
 class TaskTile extends StatelessWidget {
   final Task task;
@@ -143,6 +145,12 @@ class TaskTile extends StatelessWidget {
                       ],
                     ),
                     
+                    // Catégorie
+                    if (task.categoryId != null) ...[
+                      const SizedBox(height: 4),
+                      _buildCategoryChip(context),
+                    ],
+                    
                     // Statut de retard
                     if (task.isOverdue && !task.isCompleted) ...[
                       const SizedBox(height: 4),
@@ -256,6 +264,65 @@ class TaskTile extends StatelessWidget {
       return 'Hier';
     } else {
       return '${task.date.day}/${task.date.month}/${task.date.year}';
+    }
+  }
+
+  Widget _buildCategoryChip(BuildContext context) {
+    return FutureBuilder<Category?>(
+      future: _getCategory(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          final category = snapshot.data!;
+          final theme = Theme.of(context);
+          final colorScheme = theme.colorScheme;
+          
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: category.color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: category.color.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: category.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  category.name,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: category.color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Future<Category?> _getCategory() async {
+    if (task.categoryId == null) return null;
+    
+    try {
+      final categoryService = CategoryService();
+      return await categoryService.getCategoryById(task.categoryId!);
+    } catch (e) {
+      print('Erreur lors du chargement de la catégorie: $e');
+      return null;
     }
   }
 }
