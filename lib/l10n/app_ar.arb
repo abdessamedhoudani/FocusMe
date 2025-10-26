@@ -12,6 +12,10 @@
   "@overdue": {
     "description": "متأخرة"
   },
+  "tomorrow": "غداً",
+  "@tomorrow": {
+    "description": "غداً"
+  },
   "all": "الكل",
   "@all": {
     "description": "جميع المهام"
@@ -151,6 +155,10 @@
   "noOverdueTasks": "لا توجد مهام متأخرة",
   "@noOverdueTasks": {
     "description": "لا توجد مهام متأخرة"
+  },
+  "noTomorrowTasks": "لا توجد مهام مجدولة للغد",
+  "@noTomorrowTasks": {
+    "description": "لا توجد مهام مجدولة للغد"
   },
   "noTasks": "لا توجد مهام",
   "@noTasks": {

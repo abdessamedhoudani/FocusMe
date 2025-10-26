@@ -18,6 +18,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overdue => 'متأخرة';
 
   @override
+  String get tomorrow => 'غداً';
+
+  @override
   String get all => 'الكل';
 
   @override
@@ -121,6 +124,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noOverdueTasks => 'لا توجد مهام متأخرة';
+
+  @override
+  String get noTomorrowTasks => 'لا توجد مهام مجدولة للغد';
 
   @override
   String get noTasks => 'لا توجد مهام';

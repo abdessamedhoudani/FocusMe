@@ -14,6 +14,7 @@ class TaskViewModel extends ChangeNotifier {
 
   List<Task> _tasks = [];
   List<Task> _todayTasks = [];
+  List<Task> _tomorrowTasks = [];
   List<Task> _overdueTasks = [];
   bool _isLoading = false;
   String? _error;
@@ -36,6 +37,7 @@ class TaskViewModel extends ChangeNotifier {
   // Getters
   List<Task> get tasks => _tasks;
   List<Task> get todayTasks => _todayTasks;
+  List<Task> get tomorrowTasks => _tomorrowTasks;
   List<Task> get overdueTasks => _overdueTasks;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -211,8 +213,9 @@ class TaskViewModel extends ChangeNotifier {
       // Nettoyer les doublons potentiels
       _removeDuplicateTasks();
       
-      // Mettre à jour les tâches d'aujourd'hui et en retard immédiatement
+      // Mettre à jour les tâches d'aujourd'hui, demain et en retard immédiatement
       await _updateTodayTasks();
+      await _updateTomorrowTasks();
       await _updateOverdueTasks();
       _clearError();
       
@@ -253,6 +256,12 @@ class TaskViewModel extends ChangeNotifier {
   Future<void> _updateTodayTasks() async {
     _todayTasks = _tasks.where((task) => task.isToday).toList();
     _todayTasks.sort((a, b) => a.fullDateTime.compareTo(b.fullDateTime));
+  }
+
+  // Mettre à jour les tâches de demain
+  Future<void> _updateTomorrowTasks() async {
+    _tomorrowTasks = _tasks.where((task) => task.isTomorrow).toList();
+    _tomorrowTasks.sort((a, b) => a.fullDateTime.compareTo(b.fullDateTime));
   }
 
   // Mettre à jour les tâches en retard
@@ -297,6 +306,7 @@ class TaskViewModel extends ChangeNotifier {
       }
       
       _updateTodayTasksSync();
+      _updateTomorrowTasksSync();
       _updateOverdueTasksSync();
       notifyListeners();
       
@@ -562,6 +572,12 @@ class TaskViewModel extends ChangeNotifier {
     _todayTasks.sort((a, b) => a.fullDateTime.compareTo(b.fullDateTime));
   }
 
+  // Mise à jour synchrone des tâches de demain
+  void _updateTomorrowTasksSync() {
+    _tomorrowTasks = _tasks.where((task) => task.isTomorrow).toList();
+    _tomorrowTasks.sort((a, b) => a.fullDateTime.compareTo(b.fullDateTime));
+  }
+
   // Mise à jour synchrone des tâches en retard
   void _updateOverdueTasksSync() {
     _overdueTasks = _tasks.where((task) => task.isOverdue).toList();
@@ -590,6 +606,7 @@ class TaskViewModel extends ChangeNotifier {
         if (index != -1) {
           _tasks[index] = task;
           _updateTodayTasksSync();
+          _updateTomorrowTasksSync();
           _updateOverdueTasksSync();
           notifyListeners();
           _updateTaskAsync(task);
@@ -606,6 +623,7 @@ class TaskViewModel extends ChangeNotifier {
         if (index != -1) {
           _tasks[index] = task;
           _updateTodayTasksSync();
+          _updateTomorrowTasksSync();
           _updateOverdueTasksSync();
           notifyListeners();
         }
@@ -669,6 +687,7 @@ class TaskViewModel extends ChangeNotifier {
       }
 
       _updateTodayTasksSync();
+      _updateTomorrowTasksSync();
       _updateOverdueTasksSync();
       notifyListeners();
 
@@ -703,6 +722,7 @@ class TaskViewModel extends ChangeNotifier {
         // Supprimer seulement cette occurrence
         _tasks.removeWhere((task) => task.id == taskId);
         _updateTodayTasksSync();
+        _updateTomorrowTasksSync();
         _updateOverdueTasksSync();
         notifyListeners();
         
@@ -735,6 +755,7 @@ class TaskViewModel extends ChangeNotifier {
       }
 
       _updateTodayTasksSync();
+      _updateTomorrowTasksSync();
       _updateOverdueTasksSync();
       notifyListeners();
 
@@ -773,6 +794,7 @@ class TaskViewModel extends ChangeNotifier {
         }
         
         _updateTodayTasksSync();
+        _updateTomorrowTasksSync();
         _updateOverdueTasksSync();
         notifyListeners();
       }
@@ -894,6 +916,7 @@ class TaskViewModel extends ChangeNotifier {
   void _checkAndGenerateRecurringTasks() {
     _generateRecurringTasksIfNeeded();
     _updateTodayTasksSync();
+    _updateTomorrowTasksSync();
     _updateOverdueTasksSync();
   }
 
@@ -940,9 +963,14 @@ class TaskViewModel extends ChangeNotifier {
 
   // Programmer les notifications pour les tâches d'aujourd'hui
   Future<void> _scheduleNotificationsForToday() async {
+    // Nettoyer d'abord les notifications obsolètes (tâches qui ne sont plus dans la liste)
+    await cleanupNotifications();
+    
     final todayTasks = _tasks.where((task) => 
         task.isToday && !task.isCompleted && task.fullDateTime.isAfter(DateTime.now())
     ).toList();
+    
+    print('Programmation des notifications pour ${todayTasks.length} tâches d\'aujourd\'hui');
     
     await _notificationService.scheduleNotificationsForTasks(todayTasks);
   }
@@ -959,6 +987,7 @@ class TaskViewModel extends ChangeNotifier {
     _removeDuplicateTasks();
     
     await _updateTodayTasks();
+    await _updateTomorrowTasks();
     await _updateOverdueTasks();
     notifyListeners();
     

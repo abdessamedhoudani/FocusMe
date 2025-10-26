@@ -12,6 +12,10 @@
   "@overdue": {
     "description": "En retard"
   },
+  "tomorrow": "Demain",
+  "@tomorrow": {
+    "description": "Demain"
+  },
   "all": "Toutes",
   "@all": {
     "description": "Toutes les tâches"
@@ -151,6 +155,10 @@
   "noOverdueTasks": "Aucune tâche en retard",
   "@noOverdueTasks": {
     "description": "Aucune tâche en retard"
+  },
+  "noTomorrowTasks": "Aucune tâche prévue pour demain",
+  "@noTomorrowTasks": {
+    "description": "Aucune tâche prévue pour demain"
   },
   "noTasks": "Aucune tâche",
   "@noTasks": {

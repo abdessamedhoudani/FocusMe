@@ -18,6 +18,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get overdue => 'En retard';
 
   @override
+  String get tomorrow => 'Demain';
+
+  @override
   String get all => 'Toutes';
 
   @override
@@ -123,6 +126,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noOverdueTasks => 'Aucune tâche en retard';
+
+  @override
+  String get noTomorrowTasks => 'Aucune tâche prévue pour demain';
 
   @override
   String get noTasks => 'Aucune tâche';

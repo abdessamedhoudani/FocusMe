@@ -12,6 +12,10 @@
   "@overdue": {
     "description": "Overdue"
   },
+  "tomorrow": "Tomorrow",
+  "@tomorrow": {
+    "description": "Tomorrow"
+  },
   "all": "All",
   "@all": {
     "description": "All tasks"
@@ -151,6 +155,10 @@
   "noOverdueTasks": "No overdue tasks",
   "@noOverdueTasks": {
     "description": "No overdue tasks"
+  },
+  "noTomorrowTasks": "No tasks scheduled for tomorrow",
+  "@noTomorrowTasks": {
+    "description": "No tasks scheduled for tomorrow"
   },
   "noTasks": "No tasks",
   "@noTasks": {

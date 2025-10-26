@@ -136,6 +136,15 @@ class Task {
            date.day == now.day;
   }
 
+  // Vérifier si la tâche est pour demain
+  bool get isTomorrow {
+    final now = DateTime.now();
+    final tomorrow = now.add(const Duration(days: 1));
+    return date.year == tomorrow.year &&
+           date.month == tomorrow.month &&
+           date.day == tomorrow.day;
+  }
+
   // Vérifier si la tâche est en retard
   bool get isOverdue {
     if (isCompleted) return false;

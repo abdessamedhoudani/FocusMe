@@ -269,8 +269,19 @@ class NotificationService {
         return;
       }
 
+      // Vérifier si la tâche est pour aujourd'hui
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final taskDate = DateTime(task.date.year, task.date.month, task.date.day);
+      final isToday = taskDate.isAtSameMomentAs(today);
+      
+      if (!isToday) {
+        print('Notification ignorée - la tâche "${task.title}" n\'est pas pour aujourd\'hui (date: ${task.date.toString().split(' ')[0]})');
+        return;
+      }
+
       // Vérifier si la tâche est dans le futur
-      if (task.fullDateTime.isBefore(DateTime.now())) {
+      if (task.fullDateTime.isBefore(now)) {
         print(
           'Tâche dans le passé, notification non programmée: ${task.title}',
         );
@@ -410,11 +421,25 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
-  // Programmer des notifications pour toutes les tâches d'une liste
+  // Programmer des notifications pour toutes les tâches d'une liste (seulement pour aujourd'hui)
   Future<void> scheduleNotificationsForTasks(List<Task> tasks) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
     for (final task in tasks) {
-      if (!task.isCompleted && task.fullDateTime.isAfter(DateTime.now())) {
+      // Vérifier que la tâche est pour aujourd'hui
+      final taskDate = DateTime(task.date.year, task.date.month, task.date.day);
+      final isToday = taskDate.isAtSameMomentAs(today);
+      
+      // Programmer uniquement si:
+      // 1. La tâche n'est pas terminée
+      // 2. La tâche est pour aujourd'hui
+      // 3. L'heure de la tâche est dans le futur
+      if (!task.isCompleted && isToday && task.fullDateTime.isAfter(now)) {
+        print('Programmation notification pour aujourd\'hui: ${task.title} à ${task.fullDateTime}');
         await scheduleTaskNotification(task);
+      } else {
+        print('Notification ignorée - ${task.title}: terminée=${task.isCompleted}, aujourd\'hui=$isToday, futur=${task.fullDateTime.isAfter(now)}');
       }
     }
   }

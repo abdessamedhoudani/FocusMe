@@ -118,6 +118,12 @@ abstract class AppLocalizations {
   /// **'Overdue'**
   String get overdue;
 
+  /// Tomorrow
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get tomorrow;
+
   /// All tasks
   ///
   /// In en, this message translates to:
@@ -327,6 +333,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No overdue tasks'**
   String get noOverdueTasks;
+
+  /// No tasks scheduled for tomorrow
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks scheduled for tomorrow'**
+  String get noTomorrowTasks;
 
   /// No tasks
   ///

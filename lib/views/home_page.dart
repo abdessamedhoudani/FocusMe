@@ -133,7 +133,7 @@ class _TasksTab extends StatelessWidget {
         }
 
         return DefaultTabController(
-          length: 3,
+          length: 4,
           child: Column(
             children: [
               // Header avec résumé
@@ -143,6 +143,7 @@ class _TasksTab extends StatelessWidget {
               TabBar(
                 tabs: [
                   Tab(text: TranslationService.getTranslation(context, 'today')),
+                  Tab(text: TranslationService.getTranslation(context, 'tomorrow')),
                   Tab(text: TranslationService.getTranslation(context, 'overdue')),
                   Tab(text: TranslationService.getTranslation(context, 'all')),
                 ],
@@ -153,6 +154,7 @@ class _TasksTab extends StatelessWidget {
                 child: TabBarView(
                   children: [
                     _buildTodayTasks(context, viewModel),
+                    _buildTomorrowTasks(context, viewModel),
                     _buildOverdueTasks(context, viewModel),
                     _buildAllTasks(context, viewModel),
                   ],
@@ -273,6 +275,17 @@ class _TasksTab extends StatelessWidget {
       onTaskEdit: (task) => _navigateToEditTask(context, task),
       onTaskDelete: (task) => _showDeleteDialog(context, task),
       emptyMessage: TranslationService.getTranslation(context, 'noTasksToday'),
+    );
+  }
+
+  Widget _buildTomorrowTasks(BuildContext context, TaskViewModel viewModel) {
+    return TaskList(
+      tasks: viewModel.tomorrowTasks,
+      onTaskTap: null, // Supprimé le dialogue d'infos
+      onTaskToggle: (task) => viewModel.toggleTaskCompletion(task.id),
+      onTaskEdit: (task) => _navigateToEditTask(context, task),
+      onTaskDelete: (task) => _showDeleteDialog(context, task),
+      emptyMessage: TranslationService.getTranslation(context, 'noTomorrowTasks'),
     );
   }
 
